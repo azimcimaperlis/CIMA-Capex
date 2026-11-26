@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAPEX Dashboard</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f5f5f5; --surface:#ffffff; --surface-2:#fafafa; --border:#e0e0e0;
+  --text:#242424; --text-2:#616161; --text-3:#8a8a8a;
+  --brand:#0f6cbd; --brand-hover:#115ea3; --brand-soft:#ebf3fc;
+  --series-1:#257de0; --series-2:#f47230;
+  --good:#0aac23; --good-text:#0e7a0d; --warn:#fbb315; --warn-text:#8a5a00; --crit:#dc3c3d; --crit-text:#b10e1c;
+  --grid:#ececec; --shadow:0 1px 2px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#141414; --surface:#1f1f1f; --surface-2:#262626; --border:#383838;
+    --text:#efefef; --text-2:#b3b3b3; --text-3:#8a8a8a;
+    --brand:#479ef5; --brand-hover:#62abf5; --brand-soft:#1a2d44;
+    --series-1:#338ced; --series-2:#e76624;
+    --good-text:#54c45e; --warn-text:#fbb315; --crit-text:#f1707b;
+    --grid:#2e2e2e; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#141414; --surface:#1f1f1f; --surface-2:#262626; --border:#383838;
+  --text:#efefef; --text-2:#b3b3b3; --text-3:#8a8a8a;
+  --brand:#479ef5; --brand-hover:#62abf5; --brand-soft:#1a2d44;
+  --series-1:#338ced; --series-2:#e76624;
+  --good-text:#54c45e; --warn-text:#fbb315; --crit-text:#f1707b;
+  --grid:#2e2e2e; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+
+/* Header (Power Apps: HeaderContainer) */
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+header h1{font-size:16px;font-weight:600;margin:0}
+header .sub{color:var(--text-2);font-size:12px}
+header .sp{flex:1}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:6px 12px;cursor:pointer;min-height:32px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-hover)}
+.btn.danger{color:var(--crit-text)}
+.btn:focus-visible,.stage:focus-visible,tr:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+main{max-width:1440px;margin:0 auto;padding:16px 20px 40px;display:grid;gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:16px;min-width:0}
+.card h2{font-size:14px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h2 .hint{font-weight:400;color:var(--text-3);font-size:12px;margin-left:auto}
+
+/* KPI row */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.kpi .lbl{color:var(--text-2);font-size:12px}
+.kpi .val{font-size:26px;font-weight:600;margin-top:4px}
+.kpi .foot{font-size:12px;color:var(--text-2);margin-top:2px}
+.meter{height:6px;background:var(--grid);border-radius:3px;margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--series-1);border-radius:3px}
+
+/* Process flow (Power Apps: horizontal Gallery of stages) */
+.flow{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0;align-items:stretch}
+.stage{position:relative;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;padding:10px 10px 10px 12px;margin-right:18px;cursor:pointer;text-align:left}
+.stage:last-child{margin-right:0}
+.stage:not(:last-child)::after{content:"";position:absolute;right:-14px;top:50%;width:10px;height:10px;border-top:2px solid var(--text-3);border-right:2px solid var(--text-3);transform:translateY(-50%) rotate(45deg)}
+.stage:hover{border-color:var(--brand)}
+.stage.on{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.stage .no{font-size:11px;color:var(--text-3)}
+.stage .nm{font-weight:600;font-size:13px;line-height:1.25;min-height:2.5em}
+.stage .who{font-size:11px;color:var(--text-2);min-height:2.6em}
+.stage .ct{font-size:22px;font-weight:600;margin-top:4px}
+.stage .rm{font-size:12px;color:var(--text-2)}
+.stage .late{margin-top:6px;font-size:11px;color:var(--crit-text);font-weight:600;min-height:1.3em}
+.flowfoot{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--text-2)}
+.flowfoot b{color:var(--text)}
+
+.grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+
+/* Bar chart */
+.legend{display:flex;gap:16px;font-size:12px;color:var(--text-2);margin-bottom:10px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sw.mk{width:2px;height:12px;border-radius:0;background:var(--text)}
+.brow{display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;align-items:center;padding:6px 0}
+.brow .nm{font-size:13px}
+.brow .info{grid-column:2;font-size:12px;color:var(--text-2);margin-top:-2px}
+.track{position:relative;height:18px}
+.track .base{position:absolute;inset:7px 0;background:var(--grid);border-radius:2px}
+.seg{position:absolute;top:0;height:18px;cursor:default}
+.seg.a{background:var(--series-1);border-radius:0}
+.seg.b{background:var(--series-2);border-radius:0 4px 4px 0}
+.seg.a.end{border-radius:0 4px 4px 0}
+.bud{position:absolute;top:-3px;width:2px;height:24px;background:var(--text)}
+.over{color:var(--crit-text);font-weight:600}
+
+/* Matrix */
+.mx{width:100%;border-collapse:collapse;font-size:13px}
+.mx td{padding:8px 6px;border-bottom:1px solid var(--border)}
+.mx td:first-child{white-space:nowrap;color:var(--text-2)}
+.mx tr:last-child td{border-bottom:0}
+.note{font-size:12px;color:var(--text-3);margin-top:10px}
+
+/* Table (Power Apps: Gallery / Data table) */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input,.toolbar select{border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:6px 10px;min-height:32px}
+.toolbar input{flex:1;min-width:180px}
+.tw{overflow-x:auto}
+table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+.list th{text-align:left;font-weight:600;color:var(--text-2);font-size:12px;padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.list td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.list tbody tr{cursor:pointer}
+.list tbody tr:hover{background:var(--surface-2)}
+.list .r{text-align:right}
+.list td:first-child{white-space:nowrap}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:var(--surface-2);border:1px solid var(--border);white-space:nowrap}
+.pill.rej{color:var(--crit-text);border-color:currentColor;background:transparent}
+.pill.done{color:var(--good-text);border-color:currentColor;background:transparent}
+.sla{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.sla.g .dot{background:var(--good)} .sla.w .dot{background:var(--warn)} .sla.c .dot{background:var(--crit)}
+.sla.c{color:var(--crit-text);font-weight:600}
+.empty{padding:24px;text-align:center;color:var(--text-3)}
+.pri-T{color:var(--crit-text);font-weight:600}
+
+/* Drawer + modal */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:none}
+.scrim.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);z-index:31;border-left:1px solid var(--border);transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+.drawer.show{transform:none}
+.dh{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+.dh h3{margin:0;font-size:16px}
+.dh .x{margin-left:auto}
+.db{padding:16px 20px;overflow:auto;flex:1}
+.df{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;margin-bottom:16px}
+.kv div{font-size:12px;color:var(--text-2)} .kv b{display:block;font-size:14px;color:var(--text);font-weight:600}
+.sect{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
+.route{list-style:none;margin:0;padding:0}
+.route li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:6px 0;position:relative}
+.route li:not(:last-child)::before{content:"";position:absolute;left:10px;top:26px;bottom:-6px;width:2px;background:var(--border)}
+.route .ic{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:var(--surface);display:grid;place-items:center;font-size:12px;font-weight:700;z-index:1}
+.route .done .ic{border-color:var(--good);background:var(--good);color:#fff}
+.route .cur .ic{border-color:var(--brand);color:var(--brand)}
+.route .rej .ic{border-color:var(--crit);background:var(--crit);color:#fff}
+.route .t{font-size:13px} .route .t small{display:block;color:var(--text-2);font-size:12px}
+.route .d{font-size:12px;color:var(--text-2);white-space:nowrap}
+.df textarea{flex:1 1 100%;border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:6px 10px;min-height:56px;resize:vertical}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(640px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;z-index:31;display:none}
+.modal.show{display:block}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 20px}
+.form label{display:grid;gap:4px;font-size:12px;color:var(--text-2)}
+.form .full{grid-column:1/-1}
+.form input,.form select,.form textarea{border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:6px 10px;min-height:32px;color:var(--text)}
+.preview{grid-column:1/-1;background:var(--brand-soft);border-radius:6px;padding:10px 12px;font-size:13px}
+.tip{position:fixed;z-index:40;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.15);border-radius:6px;padding:8px 10px;font-size:12px;display:none;max-width:260px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:13px;z-index:50;display:none}
+
+@media (max-width:1100px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flow{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:12px}
+  .stage:nth-child(4n){margin-right:0}
+  .stage:nth-child(4n)::after{display:none}
+  .grid2{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  main{padding:12px 16px 32px}
+  header{padding:10px 16px;flex-wrap:wrap}
+  header .sub{display:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stage:nth-child(2n){margin-right:0}
+  .stage:nth-child(2n)::after{display:none}
+  .stage:nth-child(4n+1)::after,.stage:nth-child(4n+3)::after{display:block}
+  .brow{grid-template-columns:90px minmax(0,1fr)}
+  .form{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>CAPEX — Aliran Kelulusan</h1>
+    <div class="sub">Tahun kewangan 2026 · data contoh untuk mockup Power Apps</div>
+  </div>
+  <div class="sp"></div>
+  <button class="btn" id="btnReset" title="Kosongkan semua penapis">Set semula penapis</button>
+  <button class="btn primary" id="btnNew">+ Permohonan baru</button>
+</header>
+
+<main>
+  <section class="kpis" id="kpis"></section>
+
+  <section class="card">
+    <h2>Process flow kelulusan CAPEX <span class="hint">Klik peringkat untuk tapis senarai</span></h2>
+    <div class="flow" id="flow"></div>
+    <div class="flowfoot" id="flowfoot"></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Bajet vs penggunaan ikut jabatan <span class="hint">RM, TK2026</span></h2>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--series-1)"></i>Diluluskan</span>
+        <span><i class="sw" style="background:var(--series-2)"></i>Dalam kelulusan</span>
+        <span><i class="sw mk"></i>Bajet</span>
+      </div>
+      <div id="bars"></div>
+    </div>
+    <div class="card">
+      <h2>Matriks had kelulusan <span class="hint">Contoh — ganti dengan had sebenar</span></h2>
+      <table class="mx" id="matrix"></table>
+      <p class="note">Laluan: Ketua Jabatan → Semakan Teknikal → Kewangan → setiap pelulus sehingga had yang meliputi nilai permohonan. SLA setiap pelulus: 5 hari bekerja.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 id="listTitle">Senarai permohonan</h2>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Cari ID, tajuk atau pemohon">
+      <select id="fJab"><option value="">Semua jabatan</option></select>
+      <select id="fKat"><option value="">Semua kategori</option></select>
+      <select id="fSla"><option value="">Semua status SLA</option><option value="c">Lewat SLA</option><option value="w">Hampir SLA</option></select>
+    </div>
+    <div class="tw"><table class="list">
+      <thead><tr><th>ID</th><th>Tajuk</th><th>Jabatan</th><th class="r">Nilai (RM)</th><th>Peringkat</th><th>Tindakan seterusnya</th><th>Hari di peringkat</th><th>Keutamaan</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="drawer" id="drawer" aria-label="Butiran permohonan">
+  <div class="dh"><div><div class="num" id="dId" style="font-size:12px;color:var(--text-2)"></div><h3 id="dTitle"></h3></div><button class="btn x" id="dClose" aria-label="Tutup">✕</button></div>
+  <div class="db" id="dBody"></div>
+  <div class="df" id="dFoot"></div>
+</aside>
+
+<div class="modal" id="modal" role="dialog" aria-label="Permohonan CAPEX baru">
+  <div class="dh"><h3>Permohonan CAPEX baru</h3><button class="btn x" id="mClose" aria-label="Tutup">✕</button></div>
+  <form class="form" id="form">
+    <label class="full">Tajuk projek<input name="tajuk" required></label>
+    <label>Jabatan<select name="jabatan" id="nJab"></select></label>
+    <label>Kategori<select name="kategori" id="nKat"></select></label>
+    <label>Anggaran kos (RM)<input name="nilai" type="number" min="1000" step="1000" required id="nNilai"></label>
+    <label>Tempoh pulangan (tahun)<input name="payback" type="number" min="0" step="0.1"></label>
+    <label>Keutamaan<select name="keutamaan"><option>Tinggi</option><option selected>Sederhana</option><option>Rendah</option></select></label>
+    <label>Pemohon<input name="pemohon" value="Pengguna semasa"></label>
+    <label class="full">Justifikasi<textarea name="justifikasi" rows="3"></textarea></label>
+    <div class="preview" id="nRoute">Masukkan anggaran kos untuk lihat laluan kelulusan.</div>
+    <div class="full" style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" id="mCancel">Batal</button><button class="btn primary">Hantar permohonan</button></div>
+  </form>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== KONFIGURASI (dalam Power Apps: SharePoint list "CAPEX_Matriks" & "CAPEX_Bajet") ===== */
+const TODAY = new Date('2026-11-26');
+const MATRIKS = [
+  {had:50000,   pelulus:'Pengurus Loji'},
+  {had:250000,  pelulus:'Pengurus Besar (GM)'},
+  {had:1000000, pelulus:'CFO / COO'},
+  {had:Infinity,pelulus:'CEO / Lembaga Pengarah'}
+];
+const BAJET = {Elektrik:1600000, Mekanikal:900000, Kuari:700000, Pengeluaran:1200000, Utiliti:450000, HSE:1500000};
+const KATEGORI = ['Penggantian aset','Keselamatan & pematuhan','Kapasiti / produktiviti','Penjimatan kos & tenaga','Alam sekitar'];
+const STAGES = [
+  {k:'DRAF',   nm:'Draf permohonan',      who:'Pemohon',                     sla:null},
+  {k:'KJ',     nm:'Semakan Ketua Jabatan',who:'Ketua Jabatan',               sla:3},
+  {k:'TEK',    nm:'Semakan teknikal',     who:'Jurutera Kanan / Projek',     sla:5},
+  {k:'KEW',    nm:'Semakan kewangan',     who:'Pengawal Kewangan (ROI, bajet)',sla:5},
+  {k:'LULUS',  nm:'Kelulusan pengurusan', who:'Ikut matriks had',            sla:5},
+  {k:'PO',     nm:'Perolehan (PR/PO)',    who:'Jabatan Perolehan',           sla:21},
+  {k:'LAKSANA',nm:'Pelaksanaan',          who:'Pengurus Projek',             sla:null},
+  {k:'TUTUP',  nm:'Tutup & permodalan',   who:'Kewangan (daftar aset)',      sla:10}
+];
+const SK = Object.fromEntries(STAGES.map((s,i)=>[s.k,{...s,i}]));
+
+/* ===== DATA CONTOH (dalam Power Apps: SharePoint list "CAPEX_Permohonan" + "CAPEX_Sejarah") ===== */
+// peringkat = peringkat semasa; lulusKe = indeks pelulus semasa dalam matriks (peringkat LULUS sahaja); hari = hari di peringkat semasa
+const SEED = [
+  ['Quarry Lorry Washing Bay — sistem elektrik, pam & kawalan','Kuari','Alam sekitar',186000,'LAKSANA',0,24,'Tinggi',2.5,'Ahmad Faiz',145000],
+  ['Penggantian VFD kipas ID Kiln 1','Pengeluaran','Penjimatan kos & tenaga',420000,'LULUS',2,6,'Tinggi',1.8,'Lim Wei Jie'],
+  ['Sistem pengesan & pemadam kebakaran bilik MCC','HSE','Keselamatan & pematuhan',95000,'KEW',0,4,'Tinggi',null,'Nurul Huda'],
+  ['Pam air sembur WS1/WS2 15 kW (ganti)','Kuari','Penggantian aset',38000,'TUTUP',0,12,'Sederhana',null,'Ahmad Faiz',36200],
+  ['Naik taraf PLC Raw Mill S7-300 → S7-1500','Elektrik','Penggantian aset',650000,'TEK',0,8,'Tinggi',null,'Rajesh Kumar'],
+  ['Bag filter Cement Mill 2','HSE','Alam sekitar',1450000,'LULUS',3,9,'Tinggi',null,'Siti Aminah'],
+  ['Kompresor udara 75 kW cekap tenaga','Utiliti','Penjimatan kos & tenaga',210000,'PO',0,12,'Sederhana',2.1,'Tan Boon Huat'],
+  ['Tali sawat konveyor kuari CV-03 (ganti)','Kuari','Penggantian aset',120000,'KJ',0,2,'Sederhana',null,'Mohd Hafiz'],
+  ['Sistem pemantauan tenaga (EMS)','Utiliti','Penjimatan kos & tenaga',85000,'DRAF',0,3,'Rendah',1.5,'Tan Boon Huat'],
+  ['Transformer 11 kV/415 V 2 MVA (ganti)','Elektrik','Penggantian aset',780000,'PO',0,25,'Tinggi',null,'Rajesh Kumar'],
+  ['Overhaul gearbox ball mill','Mekanikal','Penggantian aset',320000,'DITOLAK',2,15,'Sederhana',null,'Zulkifli Hassan'],
+  ['Lampu LED high-bay kawasan pembungkusan','Elektrik','Penjimatan kos & tenaga',46000,'TUTUP',0,30,'Rendah',1.2,'Rajesh Kumar',44800],
+  ['Hammer & liner crusher primer','Kuari','Kapasiti / produktiviti',160000,'LAKSANA',0,40,'Tinggi',null,'Mohd Hafiz',98000],
+  ['CCTV & kawalan akses pintu kilang','HSE','Keselamatan & pematuhan',72000,'KJ',0,5,'Sederhana',null,'Nurul Huda'],
+  ['Penganalisis XRF makmal kualiti','Pengeluaran','Kapasiti / produktiviti',540000,'KEW',0,7,'Sederhana',3.4,'Lim Wei Jie'],
+  ['Weighbridge digital pintu kuari','Kuari','Kapasiti / produktiviti',135000,'TEK',0,4,'Sederhana',2.8,'Ahmad Faiz'],
+  ['Pam pelincir girth gear kiln','Mekanikal','Penggantian aset',64000,'LULUS',1,3,'Tinggi',null,'Zulkifli Hassan'],
+  ['Kapasitor pembetulan faktor kuasa MSB 2','Elektrik','Penjimatan kos & tenaga',58000,'LULUS',0,7,'Sederhana',1.1,'Rajesh Kumar']
+];
+
+function routeFor(nilai){ const out=[]; for(const m of MATRIKS){ out.push(m.pelulus); if(nilai<=m.had) break; } return out; }
+function stepsFor(nilai){
+  const s=[{k:'DRAF',role:'Pemohon'},{k:'KJ',role:'Ketua Jabatan'},{k:'TEK',role:'Jurutera Kanan / Projek'},{k:'KEW',role:'Pengawal Kewangan'}];
+  routeFor(nilai).forEach(r=>s.push({k:'LULUS',role:r}));
+  s.push({k:'PO',role:'Jabatan Perolehan'},{k:'LAKSANA',role:'Pengurus Projek'},{k:'TUTUP',role:'Kewangan (daftar aset)'});
+  return s;
+}
+const addDays=(d,n)=>new Date(d.getTime()+n*864e5);
+const diffDays=(a,b)=>Math.round((b-a)/864e5);
+function rng(seed){ let x=seed; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; }
+
+let DATA = SEED.map((r,i)=>{
+  const [tajuk,jabatan,kategori,nilai,peringkat,lulusKe,hari,keutamaan,payback,pemohon,sebenar]=r;
+  const steps=stepsFor(nilai);
+  const rejected = peringkat==='DITOLAK';
+  const done = peringkat==='TUTUP';
+  let pos = rejected ? steps.findIndex(s=>s.k==='LULUS')+lulusKe : steps.findIndex(s=>s.k===peringkat)+(peringkat==='LULUS'?lulusKe:0);
+  if(done) pos = steps.length;           // semua langkah selesai
+  const rand=rng(i*7+3);
+  // bina tarikh ke belakang dari hari ini
+  const anchor=addDays(TODAY,-hari);
+  const sejarah=[]; let d=rejected?addDays(anchor,-2):anchor;
+  const lastDone = done ? steps.length-1 : pos-1;
+  const dates=[];
+  for(let j=lastDone;j>=0;j--){ dates[j]=d; d=addDays(d,-(1+Math.floor(rand()*(steps[j].k==='LAKSANA'?40:steps[j].k==='PO'?14:5)))); }
+  for(let j=0;j<=lastDone;j++) sejarah.push({langkah:j,role:steps[j].role,k:steps[j].k,tarikh:dates[j],tindakan:j===0?'Dihantar':'Disokong / lulus',ulasan:''});
+  if(rejected){ sejarah.push({langkah:pos,role:steps[pos].role,k:'LULUS',tarikh:anchor,tindakan:'Ditolak',ulasan:'Tangguh ke TK2027 — utamakan overhaul semasa shutdown tahunan.'}); }
+  const mula = sejarah.length ? (sejarah.find(h=>h.langkah===0)||{}).tarikh : anchor;
+  return {id:`CPX-2026-${String(i+1).padStart(3,'0')}`,tajuk,jabatan,kategori,nilai,keutamaan,payback,pemohon,sebenar:sebenar||null,
+    justifikasi:'Lihat kertas cadangan dilampirkan.',steps,pos,status:rejected?'DITOLAK':done?'TUTUP':'AKTIF',
+    masukPeringkat:anchor,tarikhMohon:mula||anchor,sejarah};
+});
+
+/* ===== FUNGSI TERBITAN (dalam Power Apps: kolum dikira / Power Fx) ===== */
+const stageKey = it => it.status==='DITOLAK'?'DITOLAK': it.status==='TUTUP'?'TUTUP': it.steps[it.pos].k;
+const hariDi = it => diffDays(it.masukPeringkat,TODAY);
+function slaOf(it){
+  const k=stageKey(it); if(it.status!=='AKTIF') return null;
+  const s=SK[k].sla; if(!s) return null;
+  const h=hariDi(it); return h>s?'c':h>=s*0.8?'w':'g';
+}
+const isApproved = it => it.status!=='DITOLAK' && (it.status==='TUTUP' || SK[stageKey(it)].i>=SK.PO.i);
+const inApproval = it => it.status==='AKTIF' && ['KJ','TEK','KEW','LULUS'].includes(stageKey(it));
+const nextAction = it => it.status==='DITOLAK'?'—': it.status==='TUTUP'?'Selesai': it.steps[it.pos].role;
+
+const fmtRM = n => 'RM'+(n>=1e6?(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'j':n>=1e3?Math.round(n/1e3)+'k':n);
+const fmtFull = n => n.toLocaleString('ms-MY');
+const fmtDate = d => d.toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = id => document.getElementById(id);
+
+/* ===== STATE ===== */
+const F={stage:'',q:'',jab:'',kat:'',sla:''};
+
+function filtered(){
+  return DATA.filter(it=>{
+    if(F.stage && stageKey(it)!==F.stage) return false;
+    if(F.jab && it.jabatan!==F.jab) return false;
+    if(F.kat && it.kategori!==F.kat) return false;
+    if(F.sla && slaOf(it)!==F.sla) return false;
+    if(F.q){ const q=F.q.toLowerCase(); if(!(it.id+' '+it.tajuk+' '+it.pemohon).toLowerCase().includes(q)) return false; }
+    return true;
+  });
+}
+
+/* ===== RENDER ===== */
+function renderKPI(){
+  const aktif=DATA.filter(d=>d.status==='AKTIF');
+  const pipe=DATA.filter(inApproval);
+  const lulus=DATA.filter(isApproved);
+  const totBudget=Object.values(BAJET).reduce((a,b)=>a+b,0);
+  const lulusRM=lulus.reduce((a,b)=>a+b.nilai,0);
+  const cycles=lulus.map(it=>{
+    const kj=it.sejarah.find(h=>h.k==='KJ');
+    const last=it.sejarah.filter(h=>h.k==='LULUS').pop();
+    return kj&&last?diffDays(it.sejarah[0].tarikh,last.tarikh):null;
+  }).filter(x=>x!=null);
+  const avg=cycles.length?Math.round(cycles.reduce((a,b)=>a+b,0)/cycles.length):0;
+  const late=DATA.filter(it=>slaOf(it)==='c').length;
+  const pct=Math.round(lulusRM/totBudget*100);
+  $('kpis').innerHTML=`
+    <div class="card kpi"><div class="lbl">Permohonan aktif</div><div class="val num">${aktif.length}</div><div class="foot">${DATA.length} jumlah · ${DATA.filter(d=>d.status==='DITOLAK').length} ditolak</div></div>
+    <div class="card kpi"><div class="lbl">Nilai dalam kelulusan</div><div class="val num">${fmtRM(pipe.reduce((a,b)=>a+b.nilai,0))}</div><div class="foot">${pipe.length} permohonan, KJ → Pengurusan</div></div>
+    <div class="card kpi"><div class="lbl">Diluluskan TK2026</div><div class="val num">${fmtRM(lulusRM)}</div><div class="foot">${pct}% daripada bajet ${fmtRM(totBudget)}</div><div class="meter"><i style="width:${Math.min(pct,100)}%"></i></div></div>
+    <div class="card kpi"><div class="lbl">Purata kitaran kelulusan</div><div class="val num">${avg} hari</div><div class="foot">Hantar → kelulusan akhir</div></div>
+    <div class="card kpi"><div class="lbl">Melebihi SLA</div><div class="val num" style="${late?'color:var(--crit-text)':''}">${late?'⚠ ':''}${late}</div><div class="foot"><a href="#" id="kLate" style="color:var(--brand)">Lihat senarai</a></div></div>`;
+  $('kLate').onclick=e=>{e.preventDefault(); F.sla='c'; $('fSla').value='c'; F.stage=''; renderAll(); document.querySelector('.list').scrollIntoView({behavior:'smooth'});};
+}
+
+function renderFlow(){
+  $('flow').innerHTML=STAGES.map((s,i)=>{
+    const items=DATA.filter(it=>stageKey(it)===s.k);
+    const late=items.filter(it=>slaOf(it)==='c').length;
+    return `<button class="stage ${F.stage===s.k?'on':''}" data-k="${s.k}" aria-pressed="${F.stage===s.k}">
+      <div class="no">${i+1}</div><div class="nm">${s.nm}</div><div class="who">${s.who}${s.sla?` · SLA ${s.sla} hari`:''}</div>
+      <div class="ct num">${items.length}</div><div class="rm num">${fmtRM(items.reduce((a,b)=>a+b.nilai,0))}</div>
+      <div class="late">${late?`⚠ ${late} lewat SLA`:''}</div></button>`;
+  }).join('');
+  document.querySelectorAll('.stage').forEach(b=>b.onclick=()=>{F.stage=F.stage===b.dataset.k?'':b.dataset.k; renderAll();});
+  const rej=DATA.filter(d=>d.status==='DITOLAK');
+  // bottleneck = peringkat aktif dengan purata hari tertinggi berbanding SLA
+  let worst=null;
+  STAGES.filter(s=>s.sla).forEach(s=>{const its=DATA.filter(it=>it.status==='AKTIF'&&stageKey(it)===s.k); if(!its.length) return; const r=its.reduce((a,b)=>a+hariDi(b),0)/its.length/s.sla; if(!worst||r>worst.r) worst={s,r,avg:Math.round(r*s.sla)};});
+  $('flowfoot').innerHTML=`<span>Ditolak: <b>${rej.length}</b> (${fmtRM(rej.reduce((a,b)=>a+b.nilai,0))}) ${F.stage!=='DITOLAK'?`<a href="#" id="fRej" style="color:var(--brand)">lihat</a>`:''}</span>
+    ${worst?`<span>Kesesakan utama: <b>${worst.s.nm}</b> — purata ${worst.avg} hari berbanding SLA ${worst.s.sla} hari</span>`:''}`;
+  const fr=$('fRej'); if(fr) fr.onclick=e=>{e.preventDefault(); F.stage='DITOLAK'; renderAll();};
+}
+
+function renderBars(){
+  const rows=Object.keys(BAJET).map(j=>{
+    const its=DATA.filter(it=>it.jabatan===j);
+    const a=its.filter(isApproved).reduce((s,b)=>s+b.nilai,0);
+    const p=its.filter(inApproval).reduce((s,b)=>s+b.nilai,0);
+    return {j,a,p,b:BAJET[j]};
+  });
+  const max=Math.max(...rows.map(r=>Math.max(r.b,r.a+r.p)))*1.04;
+  const W=v=>v/max*100;
+  $('bars').innerHTML=rows.map(r=>{
+    const tot=r.a+r.p, pct=Math.round(tot/r.b*100);
+    const gap = r.a&&r.p ? 'calc('+W(r.a)+'% + 2px)' : W(r.a)+'%';
+    return `<div class="brow">
+      <div class="nm">${r.j}</div>
+      <div class="track" data-j="${r.j}">
+        <div class="base"></div>
+        ${r.a?`<div class="seg a ${r.p?'':'end'}" style="left:0;width:${W(r.a)}%" data-t="Diluluskan|${r.a}|${r.j}"></div>`:''}
+        ${r.p?`<div class="seg b" style="left:${gap};width:calc(${W(r.p)}% - ${r.a?2:0}px)" data-t="Dalam kelulusan|${r.p}|${r.j}"></div>`:''}
+        <div class="bud" style="left:calc(${W(r.b)}% - 1px)" data-t="Bajet|${r.b}|${r.j}"></div>
+      </div>
+      <div class="info num">${fmtRM(r.a)} lulus + ${fmtRM(r.p)} dalam proses / bajet ${fmtRM(r.b)} · <span class="${pct>100?'over':''}">${pct>100?'⚠ ':''}${pct}%</span></div>
+    </div>`;
+  }).join('');
+  const tip=$('tip');
+  document.querySelectorAll('#bars [data-t]').forEach(el=>{
+    el.onmousemove=e=>{const [n,v,j]=el.dataset.t.split('|'); const r=rows.find(x=>x.j===j);
+      tip.innerHTML=`<b>${j}</b><br>${n}: RM ${fmtFull(+v)}<br><span style="color:var(--text-2)">Baki bajet: RM ${fmtFull(r.b-r.a-r.p)}</span>`;
+      tip.style.display='block'; tip.style.left=Math.min(e.clientX+12,innerWidth-270)+'px'; tip.style.top=(e.clientY+12)+'px';};
+    el.onmouseleave=()=>tip.style.display='none';
+  });
+}
+
+function renderMatrix(){
+  let lo=0;
+  $('matrix').innerHTML=MATRIKS.map(m=>{const t=m.had===Infinity?`> ${fmtRM(lo)}`:`${lo?fmtRM(lo)+' – ':'≤ '}${fmtRM(m.had)}`; lo=m.had; return `<tr><td class="num">${t}</td><td><b>${m.pelulus}</b></td></tr>`;}).join('');
+}
+
+function stagePill(it){
+  const k=stageKey(it);
+  if(k==='DITOLAK') return '<span class="pill rej">✕ Ditolak</span>';
+  if(k==='TUTUP') return '<span class="pill done">✓ Ditutup</span>';
+  if(k==='DRAF' && it.dikembalikan) return '<span class="pill">↩ Dikembalikan</span>';
+  return `<span class="pill">${SK[k].i+1}. ${SK[k].nm}</span>`;
+}
+function slaCell(it){
+  const s=slaOf(it), h=hariDi(it), k=stageKey(it);
+  if(it.status!=='AKTIF') return `<span class="num" style="color:var(--text-3)">—</span>`;
+  if(!s) return `<span class="num">${h} hari</span>`;
+  const lbl={g:'Dalam SLA',w:'Hampir SLA',c:'Lewat SLA'}[s];
+  return `<span class="sla ${s}" title="${lbl} (SLA ${SK[k].sla} hari)"><i class="dot"></i><span class="num">${h} / ${SK[k].sla}</span>${s==='c'?' ⚠':''}</span>`;
+}
+
+function renderList(){
+  const list=filtered().sort((a,b)=>(slaOf(b)==='c')-(slaOf(a)==='c')||b.nilai-a.nilai);
+  const parts=[]; if(F.stage) parts.push(F.stage==='DITOLAK'?'Ditolak':SK[F.stage].nm); if(F.sla) parts.push(F.sla==='c'?'Lewat SLA':'Hampir SLA');
+  $('listTitle').innerHTML=`Senarai permohonan <span class="hint">${list.length} rekod${parts.length?' · '+parts.join(' · '):''}</span>`;
+  $('rows').innerHTML=list.length?list.map(it=>`<tr tabindex="0" data-id="${it.id}">
+    <td class="num">${it.id}</td><td>${esc(it.tajuk)}</td><td>${it.jabatan}</td><td class="r num">${fmtFull(it.nilai)}</td>
+    <td>${stagePill(it)}</td><td>${esc(nextAction(it))}</td><td>${slaCell(it)}</td><td class="pri-${it.keutamaan[0]}">${it.keutamaan}</td></tr>`).join('')
+    :`<tr><td colspan="8" class="empty">Tiada permohonan sepadan dengan penapis.</td></tr>`;
+  document.querySelectorAll('#rows tr[data-id]').forEach(tr=>{tr.onclick=()=>openDrawer(tr.dataset.id); tr.onkeydown=e=>{if(e.key==='Enter')openDrawer(tr.dataset.id);};});
+}
+
+function renderAll(){ renderKPI(); renderFlow(); renderBars(); renderList(); }
+
+/* ===== DRAWER: butiran + tindakan kelulusan ===== */
+let cur=null;
+function openDrawer(id){
+  cur=DATA.find(d=>d.id===id); const it=cur;
+  $('dId').textContent=it.id+' · '+it.jabatan; $('dTitle').textContent=it.tajuk;
+  const hist=Object.fromEntries(it.sejarah.map(h=>[h.langkah,h]));
+  const route=it.steps.map((s,j)=>{
+    const h=hist[j]; let cls='', ic=j+1, d='';
+    if(h && h.tindakan==='Ditolak'){cls='rej';ic='✕';d=fmtDate(h.tarikh);}
+    else if(h){cls='done';ic='✓';d=fmtDate(h.tarikh);}
+    else if(j===it.pos && it.status==='AKTIF'){cls='cur';d=`${hariDi(it)} hari`;}
+    const sub=s.k==='LULUS'?'Kelulusan pengurusan':SK[s.k].nm;
+    return `<li class="${cls}"><span class="ic">${ic}</span><span class="t">${s.role}<small>${sub}${h&&h.ulasan?' — “'+esc(h.ulasan)+'”':''}</small></span><span class="d num">${d}</span></li>`;
+  }).join('');
+  const util = it.sebenar?`<div>Kos sebenar<b class="num">RM ${fmtFull(it.sebenar)} (${Math.round(it.sebenar/it.nilai*100)}%)</b></div>`:'';
+  $('dBody').innerHTML=`
+    <div class="kv">
+      <div>Anggaran kos<b class="num">RM ${fmtFull(it.nilai)}</b></div>
+      <div>Peringkat<b>${stagePill(it)}</b></div>
+      <div>Kategori<b>${it.kategori}</b></div>
+      <div>Keutamaan<b>${it.keutamaan}</b></div>
+      <div>Pemohon<b>${esc(it.pemohon)}</b></div>
+      <div>Tarikh mohon<b class="num">${fmtDate(it.tarikhMohon)}</b></div>
+      <div>Tempoh pulangan<b class="num">${it.payback?it.payback+' tahun':'— (pematuhan / penggantian)'}</b></div>
+      <div>Pelulus akhir<b>${routeFor(it.nilai).slice(-1)[0]}</b></div>
+      ${util}
+    </div>
+    <div class="sect">Justifikasi</div><div style="font-size:13px">${esc(it.justifikasi)}</div>
+    <div class="sect">Laluan kelulusan & sejarah</div><ol class="route">${route}</ol>`;
+  const foot=$('dFoot');
+  if(it.status!=='AKTIF'){ foot.innerHTML=`<span style="color:var(--text-2);font-size:13px">${it.status==='TUTUP'?'Projek ditutup dan dipermodalkan.':'Permohonan ditolak.'}</span><span style="flex:1"></span><button class="btn" id="aClose">Tutup</button>`; $('aClose').onclick=closeAll; }
+  else {
+    const k=stageKey(it);
+    const okLbl = k==='DRAF'?'Hantar':k==='LULUS'||k==='KJ'||k==='TEK'||k==='KEW'?'Lulus / sokong':k==='TUTUP'?'Sahkan permodalan':'Selesai peringkat';
+    foot.innerHTML=`<textarea id="aNote" placeholder="Ulasan (wajib untuk tolak / kembalikan)"></textarea>
+      <span style="font-size:12px;color:var(--text-2)">Sebagai: <b>${it.steps[it.pos].role}</b></span><span style="flex:1"></span>
+      ${k!=='DRAF'&&SK[k].i<=SK.LULUS.i?'<button class="btn danger" id="aRej">Tolak</button><button class="btn" id="aRet">Kembalikan</button>':''}
+      <button class="btn primary" id="aOk">${okLbl}</button>`;
+    $('aOk').onclick=()=>act('ok'); if($('aRej')){$('aRej').onclick=()=>act('rej'); $('aRet').onclick=()=>act('ret');}
+  }
+  $('scrim').classList.add('show'); $('drawer').classList.add('show'); $('dClose').focus();
+}
+function act(kind){
+  const it=cur, note=$('aNote').value.trim();
+  if(kind!=='ok' && !note){ $('aNote').focus(); toast('Sila isi ulasan.'); return; }
+  const step=it.steps[it.pos];
+  if(kind==='ok'){
+    it.sejarah.push({langkah:it.pos,role:step.role,k:step.k,tarikh:TODAY,tindakan:it.pos===0?'Dihantar':'Disokong / lulus',ulasan:note});
+    it.pos++; it.dikembalikan=false;
+    if(it.pos>=it.steps.length){ it.status='TUTUP'; }
+    toast(`${it.id}: ${step.role} — selesai`);
+  } else if(kind==='rej'){
+    it.sejarah.push({langkah:it.pos,role:step.role,k:step.k,tarikh:TODAY,tindakan:'Ditolak',ulasan:note}); it.status='DITOLAK'; toast(`${it.id} ditolak`);
+  } else {
+    it.sejarah=[]; it.pos=0; it.dikembalikan=true; it.justifikasi+=`\n[Dikembalikan oleh ${step.role}: ${note}]`; toast(`${it.id} dikembalikan kepada pemohon`);
+  }
+  it.masukPeringkat=TODAY;
+  renderAll(); openDrawer(it.id);
+}
+function closeAll(){ ['scrim','drawer','modal'].forEach(i=>$(i).classList.remove('show')); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',2200); }
+
+/* ===== BORANG BARU ===== */
+function openNew(){ $('form').reset(); $('nRoute').textContent='Masukkan anggaran kos untuk lihat laluan kelulusan.'; $('scrim').classList.add('show'); $('modal').classList.add('show'); $('form').tajuk.focus(); }
+$('nNilai').oninput=e=>{const v=+e.target.value; $('nRoute').innerHTML=v?`<b>Laluan kelulusan:</b> Ketua Jabatan → Teknikal → Kewangan → ${routeFor(v).join(' → ')}`:'Masukkan anggaran kos untuk lihat laluan kelulusan.';};
+$('form').onsubmit=e=>{
+  e.preventDefault(); const f=Object.fromEntries(new FormData(e.target)); const nilai=+f.nilai;
+  const steps=stepsFor(nilai); const id=`CPX-2026-${String(DATA.length+1).padStart(3,'0')}`;
+  DATA.push({id,tajuk:f.tajuk,jabatan:f.jabatan,kategori:f.kategori,nilai,keutamaan:f.keutamaan,payback:f.payback?+f.payback:null,pemohon:f.pemohon||'—',
+    sebenar:null,justifikasi:f.justifikasi||'—',steps,pos:1,status:'AKTIF',masukPeringkat:TODAY,tarikhMohon:TODAY,
+    sejarah:[{langkah:0,role:'Pemohon',k:'DRAF',tarikh:TODAY,tindakan:'Dihantar',ulasan:''}]});
+  closeAll(); F.stage='KJ'; renderAll(); toast(`${id} dihantar kepada Ketua Jabatan`);
+};
+
+/* ===== INIT ===== */
+Object.keys(BAJET).forEach(j=>{ $('fJab').add(new Option(j,j)); $('nJab').add(new Option(j,j)); });
+KATEGORI.forEach(k=>{ $('fKat').add(new Option(k,k)); $('nKat').add(new Option(k,k)); });
+$('q').oninput=e=>{F.q=e.target.value; renderList();};
+$('fJab').onchange=e=>{F.jab=e.target.value; renderList();};
+$('fKat').onchange=e=>{F.kat=e.target.value; renderList();};
+$('fSla').onchange=e=>{F.sla=e.target.value; renderList();};
+$('btnReset').onclick=()=>{Object.keys(F).forEach(k=>F[k]=''); ['q','fJab','fKat','fSla'].forEach(i=>$(i).value=''); renderAll();};
+$('btnNew').onclick=openNew;
+['dClose','mClose','mCancel','scrim'].forEach(i=>$(i).onclick=closeAll);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
+renderMatrix(); renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+{
+ "phases": [
+  {
+   "id": "p1",
+   "nama": "Cipta",
+   "warna": 0
+  },
+  {
+   "id": "p2",
+   "nama": "Nilai",
+   "warna": 1
+  },
+  {
+   "id": "p3",
+   "nama": "Lulus",
+   "warna": 2
+  },
+  {
+   "id": "p4",
+   "nama": "Laksana",
+   "warna": 3
+  }
+ ],
+ "steps": [
+  {
+   "id": "s1",
+   "phaseId": "p1",
+   "nama": "Hantar cadangan CAPEX",
+   "jenis": "langkah",
+   "userId": "@pemohon",
+   "jabatan": "",
+   "sla": null
+  },
+  {
+   "id": "s2",
+   "phaseId": "p1",
+   "nama": "Semakan Ketua Jabatan",
+   "jenis": "langkah",
+   "userId": "@ketua",
+   "jabatan": "",
+   "sla": 3
+  },
+  {
+   "id": "s3",
+   "phaseId": "p2",
+   "nama": "Semakan teknikal",
+   "jenis": "langkah",
+   "userId": "u9",
+   "jabatan": "",
+   "sla": 5
+  },
+  {
+   "id": "s4",
+   "phaseId": "p2",
+   "nama": "Semakan kewangan & bajet",
+   "jenis": "langkah",
+   "userId": "u10",
+   "jabatan": "",
+   "sla": 5
+  },
+  {
+   "id": "s5",
+   "phaseId": "p3",
+   "nama": "Kelulusan ikut matriks",
+   "jenis": "matriks",
+   "userId": "",
+   "jabatan": "",
+   "sla": 5
+  },
+  {
+   "id": "s6",
+   "phaseId": "p4",
+   "nama": "Perolehan (PR/PO)",
+   "jenis": "langkah",
+   "userId": "u11",
+   "jabatan": "",
+   "sla": 21
+  },
+  {
+   "id": "s7",
+   "phaseId": "p4",
+   "nama": "Pelaksanaan projek",
+   "jenis": "langkah",
+   "userId": "u17",
+   "jabatan": "",
+   "sla": null
+  },
+  {
+   "id": "s8",
+   "phaseId": "p4",
+   "nama": "Tutup & permodalan aset",
+   "jenis": "langkah",
+   "userId": "u12",
+   "jabatan": "",
+   "sla": 10
+  }
+ ],
+ "users": [
+  {
+   "id": "u1",
+   "nama": "Ahmad Faiz",
+   "jawatan": "Eksekutif Kuari",
+   "jabatan": "Kuari",
+   "emel": ""
+  },
+  {
+   "id": "u2",
+   "nama": "Mohd Hafiz",
+   "jawatan": "Ketua Jabatan Kuari",
+   "jabatan": "Kuari",
+   "emel": ""
+  },
+  {
+   "id": "u3",
+   "nama": "Rajesh Kumar",
+   "jawatan": "Ketua Jabatan Elektrik",
+   "jabatan": "Elektrik",
+   "emel": ""
+  },
+  {
+   "id": "u4",
+   "nama": "Zulkifli Hassan",
+   "jawatan": "Ketua Jabatan Mekanikal",
+   "jabatan": "Mekanikal",
+   "emel": ""
+  },
+  {
+   "id": "u5",
+   "nama": "Lim Wei Jie",
+   "jawatan": "Ketua Jabatan Pengeluaran",
+   "jabatan": "Pengeluaran",
+   "emel": ""
+  },
+  {
+   "id": "u6",
+   "nama": "Tan Boon Huat",
+   "jawatan": "Ketua Jabatan Utiliti",
+   "jabatan": "Utiliti",
+   "emel": ""
+  },
+  {
+   "id": "u7",
+   "nama": "Nurul Huda",
+   "jawatan": "Ketua Jabatan HSE",
+   "jabatan": "HSE",
+   "emel": ""
+  },
+  {
+   "id": "u8",
+   "nama": "Siti Aminah",
+   "jawatan": "Pegawai HSE",
+   "jabatan": "HSE",
+   "emel": ""
+  },
+  {
+   "id": "u9",
+   "nama": "Kamal Ariffin",
+   "jawatan": "Jurutera Kanan Projek",
+   "jabatan": "Kejuruteraan",
+   "emel": ""
+  },
+  {
+   "id": "u10",
+   "nama": "Farah Nadia",
+   "jawatan": "Pengawal Kewangan",
+   "jabatan": "Kewangan",
+   "emel": ""
+  },
+  {
+   "id": "u11",
+   "nama": "Hazwan Rahim",
+   "jawatan": "Eksekutif Perolehan",
+   "jabatan": "Perolehan",
+   "emel": ""
+  },
+  {
+   "id": "u12",
+   "nama": "Lee Mei Ling",
+   "jawatan": "Akauntan Aset",
+   "jabatan": "Kewangan",
+   "emel": ""
+  },
+  {
+   "id": "u13",
+   "nama": "Azlan Shah",
+   "jawatan": "Pengurus Loji",
+   "jabatan": "Pengurusan",
+   "emel": ""
+  },
+  {
+   "id": "u14",
+   "nama": "Roslan Ismail",
+   "jawatan": "Pengurus Besar (GM)",
+   "jabatan": "Pengurusan",
+   "emel": ""
+  },
+  {
+   "id": "u15",
+   "nama": "Chong Kar Wai",
+   "jawatan": "CFO",
+   "jabatan": "Pengurusan",
+   "emel": ""
+  },
+  {
+   "id": "u16",
+   "nama": "Hamidah Yusof",
+   "jawatan": "CEO",
+   "jabatan": "Pengurusan",
+   "emel": ""
+  },
+  {
+   "id": "u17",
+   "nama": "Daniel Raj",
+   "jawatan": "Pengurus Projek",
+   "jabatan": "Kejuruteraan",
+   "emel": ""
+  }
+ ],
+ "depts": [
+  {
+   "nama": "Elektrik",
+   "ketuaId": "u3",
+   "bajet": 1600000
+  },
+  {
+   "nama": "Mekanikal",
+   "ketuaId": "u4",
+   "bajet": 900000
+  },
+  {
+   "nama": "Kuari",
+   "ketuaId": "u2",
+   "bajet": 700000
+  },
+  {
+   "nama": "Pengeluaran",
+   "ketuaId": "u5",
+   "bajet": 1200000
+  },
+  {
+   "nama": "Utiliti",
+   "ketuaId": "u6",
+   "bajet": 450000
+  },
+  {
+   "nama": "HSE",
+   "ketuaId": "u7",
+   "bajet": 1500000
+  },
+  {
+   "nama": "Kejuruteraan",
+   "ketuaId": "u9",
+   "bajet": 0
+  },
+  {
+   "nama": "Kewangan",
+   "ketuaId": "u10",
+   "bajet": 0
+  },
+  {
+   "nama": "Perolehan",
+   "ketuaId": "u11",
+   "bajet": 0
+  },
+  {
+   "nama": "Pengurusan",
+   "ketuaId": "u13",
+   "bajet": 0
+  }
+ ],
+ "matrix": [
+  {
+   "had": 50000,
+   "userId": "u13"
+  },
+  {
+   "had": 250000,
+   "userId": "u14"
+  },
+  {
+   "had": 1000000,
+   "userId": "u15"
+  },
+  {
+   "had": null,
+   "userId": "u16"
+  }
+ ]
+}

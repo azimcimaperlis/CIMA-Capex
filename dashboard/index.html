@@ -1,9 +1,5 @@
-<!doctype html>
-<html lang="ms">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CAPEX Dashboard</title>
+<title>CAPEX Workflow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <style>
 :root{
   color-scheme:light;
@@ -40,7 +36,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--brand)}
 
 /* Header + tab (Power Apps: HeaderContainer + navigasi skrin) */
-header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--surface)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:16px;padding-block:0;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
 header h1{font-size:16px;font-weight:600;margin:0;white-space:nowrap}
 nav.tabs{display:flex;gap:4px;align-self:stretch;overflow-x:auto;max-width:100%}
 .tab{border:0;background:none;padding:0 12px;white-space:nowrap;cursor:pointer;color:var(--text-2);border-bottom:2px solid transparent;min-height:44px}
@@ -55,7 +52,7 @@ header .sp{flex:1}
 .btn.sm{padding:2px 8px;min-height:26px;font-size:12px}
 .btn:focus-visible,.tab:focus-visible,.step:focus-visible,tr:focus-visible,.wcard:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-main{max-width:1440px;margin:0 auto;padding:16px 20px 40px;display:grid;gap:16px}
+main{max-width:1440px;margin:0 auto;padding-block:16px 40px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:grid;gap:16px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:16px;min-width:0}
 .card h2{font-size:14px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .hint,.hint{font-weight:400;color:var(--text-3);font-size:12px}
@@ -209,8 +206,10 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 .form .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .preview{grid-column:1/-1;background:var(--brand-soft);border-radius:6px;padding:10px 12px;font-size:13px}
 .preview ol{margin:4px 0 0;padding-left:20px}
+.banner{font-size:13px;padding:8px 12px;border-radius:6px;background:var(--brand-soft);color:var(--text)}
+.banner.err{background:color-mix(in srgb,var(--crit) 12%,var(--surface));color:var(--crit-text)}
 .tip{position:fixed;z-index:40;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.15);border-radius:6px;padding:8px 10px;font-size:12px;display:none;max-width:260px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:13px;z-index:50;display:none;max-width:calc(100% - 32px)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:13px;z-index:50;display:none;max-width:calc(100% - 32px)}
 
 @media (max-width:1100px){
   .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -221,29 +220,28 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
   #flow .lane:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%);border:7px solid transparent;border-top:9px solid var(--text-3)}
 }
 @media (max-width:640px){
-  main{padding:12px 16px 32px}
-  header{padding:8px 16px 0;gap:8px}
+  main{padding-block:12px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  header{padding-block:8px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));gap:8px}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .brow{grid-template-columns:90px minmax(0,1fr)}
   .form{grid-template-columns:1fr}
   .board .lane{flex-basis:230px}
 }
 </style>
-</head>
-<body>
 <header>
   <h1>CAPEX</h1>
   <nav class="tabs" aria-label="Skrin">
-    <button class="tab" data-v="dash">Dashboard</button>
-    <button class="tab" data-v="wf">Reka workflow</button>
-    <button class="tab" data-v="set">Pengguna & jabatan</button>
+    <button class="tab" data-v="dashboard">Dashboard</button>
+    <button class="tab" data-v="workflow">Reka workflow</button>
+    <button class="tab" data-v="pengguna">Pengguna & jabatan</button>
   </nav>
   <div class="sp"></div>
   <button class="btn primary" id="btnNew">+ Permohonan baru</button>
 </header>
 
 <!-- ================= SKRIN 1: DASHBOARD ================= -->
-<main id="v-dash">
+<div class="banner" id="banner" hidden style="margin:12px auto 0;max-width:1400px;width:calc(100% - 32px)"></div>
+<main id="v-dashboard">
   <section class="kpis" id="kpis"></section>
 
   <section class="card">
@@ -263,7 +261,7 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
       <div id="bars"></div>
     </div>
     <div class="card">
-      <h2>Matriks had kelulusan <span class="hint"><a href="#set">Ubah</a></span></h2>
+      <h2>Matriks had kelulusan <span class="hint"><a href="#pengguna">Ubah</a></span></h2>
       <table class="mx" id="matrixView"></table>
       <p class="note">Kad "Kelulusan ikut matriks" dalam workflow dikembangkan kepada pelulus di atas, bermula dari tahap terendah sehingga had yang meliputi nilai permohonan.</p>
     </div>
@@ -286,14 +284,13 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 </main>
 
 <!-- ================= SKRIN 2: REKA WORKFLOW ================= -->
-<main id="v-wf" hidden>
+<main id="v-workflow" hidden>
   <section class="card">
     <h2>Reka workflow CAPEX <span class="hint">Seret kad untuk susun semula · klik kad untuk ubah · disimpan automatik dalam browser ini</span></h2>
     <div class="toolbar">
       <button class="btn" id="wfAddPhase">+ Tambah fasa</button>
       <button class="btn" id="wfExport">Eksport JSON</button>
       <button class="btn" id="wfImport">Import JSON</button>
-      <button class="btn danger" id="wfReset">Set semula ke contoh</button>
     </div>
     <div class="board" id="board"></div>
     <p class="note">Tolak pada mana-mana langkah → <b>Ditolak</b>. Selesai langkah terakhir → <b>Ditutup</b>. "(Pemohon)" dan "(Ketua jabatan pemohon)" ditentukan ikut setiap permohonan. Kad "Kelulusan ikut matriks" guna pelulus dalam tab Pengguna & jabatan.</p>
@@ -301,7 +298,7 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 </main>
 
 <!-- ================= SKRIN 3: PENGGUNA & JABATAN ================= -->
-<main id="v-set" hidden>
+<main id="v-pengguna" hidden>
   <div class="settings">
     <section class="card">
       <h2>Direktori pengguna <span class="hint" id="uCount"></span></h2>
@@ -364,70 +361,7 @@ const PC=['#2563c9','#c85a24','#1b8a5e','#3d4b5f','#7a52cc','#9a6a0a'];
 const KATEGORI=['Penggantian aset','Keselamatan & pematuhan','Kapasiti / produktiviti','Penjimatan kos & tenaga','Alam sekitar'];
 const YEAR=TODAY.getFullYear();
 
-function defaultCfg(){
-  return {
-    phases:[{id:'p1',nama:'Cipta',warna:0},{id:'p2',nama:'Nilai',warna:1},{id:'p3',nama:'Lulus',warna:2},{id:'p4',nama:'Laksana',warna:3}],
-    steps:[
-      {id:'s1',phaseId:'p1',nama:'Hantar cadangan CAPEX',jenis:'langkah',userId:'@pemohon',jabatan:'',sla:null},
-      {id:'s2',phaseId:'p1',nama:'Semakan Ketua Jabatan',jenis:'langkah',userId:'@ketua',jabatan:'',sla:3},
-      {id:'s3',phaseId:'p2',nama:'Semakan teknikal',jenis:'langkah',userId:'u9',jabatan:'',sla:5},
-      {id:'s4',phaseId:'p2',nama:'Semakan kewangan & bajet',jenis:'langkah',userId:'u10',jabatan:'',sla:5},
-      {id:'s5',phaseId:'p3',nama:'Kelulusan ikut matriks',jenis:'matriks',userId:'',jabatan:'',sla:5},
-      {id:'s6',phaseId:'p4',nama:'Perolehan (PR/PO)',jenis:'langkah',userId:'u11',jabatan:'',sla:21},
-      {id:'s7',phaseId:'p4',nama:'Pelaksanaan projek',jenis:'langkah',userId:'u17',jabatan:'',sla:null},
-      {id:'s8',phaseId:'p4',nama:'Tutup & permodalan aset',jenis:'langkah',userId:'u12',jabatan:'',sla:10}
-    ],
-    users:[
-      {id:'u1',nama:'Ahmad Faiz',jawatan:'Eksekutif Kuari',jabatan:'Kuari',emel:''},
-      {id:'u2',nama:'Mohd Hafiz',jawatan:'Ketua Jabatan Kuari',jabatan:'Kuari',emel:''},
-      {id:'u3',nama:'Rajesh Kumar',jawatan:'Ketua Jabatan Elektrik',jabatan:'Elektrik',emel:''},
-      {id:'u4',nama:'Zulkifli Hassan',jawatan:'Ketua Jabatan Mekanikal',jabatan:'Mekanikal',emel:''},
-      {id:'u5',nama:'Lim Wei Jie',jawatan:'Ketua Jabatan Pengeluaran',jabatan:'Pengeluaran',emel:''},
-      {id:'u6',nama:'Tan Boon Huat',jawatan:'Ketua Jabatan Utiliti',jabatan:'Utiliti',emel:''},
-      {id:'u7',nama:'Nurul Huda',jawatan:'Ketua Jabatan HSE',jabatan:'HSE',emel:''},
-      {id:'u8',nama:'Siti Aminah',jawatan:'Pegawai HSE',jabatan:'HSE',emel:''},
-      {id:'u9',nama:'Kamal Ariffin',jawatan:'Jurutera Kanan Projek',jabatan:'Kejuruteraan',emel:''},
-      {id:'u10',nama:'Farah Nadia',jawatan:'Pengawal Kewangan',jabatan:'Kewangan',emel:''},
-      {id:'u11',nama:'Hazwan Rahim',jawatan:'Eksekutif Perolehan',jabatan:'Perolehan',emel:''},
-      {id:'u12',nama:'Lee Mei Ling',jawatan:'Akauntan Aset',jabatan:'Kewangan',emel:''},
-      {id:'u13',nama:'Azlan Shah',jawatan:'Pengurus Loji',jabatan:'Pengurusan',emel:''},
-      {id:'u14',nama:'Roslan Ismail',jawatan:'Pengurus Besar (GM)',jabatan:'Pengurusan',emel:''},
-      {id:'u15',nama:'Chong Kar Wai',jawatan:'CFO',jabatan:'Pengurusan',emel:''},
-      {id:'u16',nama:'Hamidah Yusof',jawatan:'CEO',jabatan:'Pengurusan',emel:''},
-      {id:'u17',nama:'Daniel Raj',jawatan:'Pengurus Projek',jabatan:'Kejuruteraan',emel:''}
-    ],
-    depts:[
-      {nama:'Elektrik',ketuaId:'u3',bajet:1600000},{nama:'Mekanikal',ketuaId:'u4',bajet:900000},
-      {nama:'Kuari',ketuaId:'u2',bajet:700000},{nama:'Pengeluaran',ketuaId:'u5',bajet:1200000},
-      {nama:'Utiliti',ketuaId:'u6',bajet:450000},{nama:'HSE',ketuaId:'u7',bajet:1500000},
-      {nama:'Kejuruteraan',ketuaId:'u9',bajet:0},{nama:'Kewangan',ketuaId:'u10',bajet:0},
-      {nama:'Perolehan',ketuaId:'u11',bajet:0},{nama:'Pengurusan',ketuaId:'u13',bajet:0}
-    ],
-    matrix:[{had:50000,userId:'u13'},{had:250000,userId:'u14'},{had:1000000,userId:'u15'},{had:null,userId:'u16'}]
-  };
-}
-
-/* Data contoh: [tajuk, jabatan, kategori, nilai, status, langkah, sub(tahap matriks), hari di langkah, keutamaan, payback, pemohon, kos sebenar] */
-const SEED=[
-  ['Quarry Lorry Washing Bay — sistem elektrik, pam & kawalan','Kuari','Alam sekitar',186000,'AKTIF','s7',0,24,'Tinggi',2.5,'u1',145000],
-  ['Penggantian VFD kipas ID Kiln 1','Pengeluaran','Penjimatan kos & tenaga',420000,'AKTIF','s5',2,6,'Tinggi',1.8,'u5'],
-  ['Sistem pengesan & pemadam kebakaran bilik MCC','HSE','Keselamatan & pematuhan',95000,'AKTIF','s4',0,4,'Tinggi',null,'u8'],
-  ['Pam air sembur WS1/WS2 15 kW (ganti)','Kuari','Penggantian aset',38000,'SELESAI','',0,12,'Sederhana',null,'u1',36200],
-  ['Naik taraf PLC Raw Mill S7-300 → S7-1500','Elektrik','Penggantian aset',650000,'AKTIF','s3',0,8,'Tinggi',null,'u3'],
-  ['Bag filter Cement Mill 2','HSE','Alam sekitar',1450000,'AKTIF','s5',3,9,'Tinggi',null,'u8'],
-  ['Kompresor udara 75 kW cekap tenaga','Utiliti','Penjimatan kos & tenaga',210000,'AKTIF','s6',0,12,'Sederhana',2.1,'u6'],
-  ['Tali sawat konveyor kuari CV-03 (ganti)','Kuari','Penggantian aset',120000,'AKTIF','s2',0,2,'Sederhana',null,'u1'],
-  ['Sistem pemantauan tenaga (EMS)','Utiliti','Penjimatan kos & tenaga',85000,'AKTIF','s1',0,3,'Rendah',1.5,'u6'],
-  ['Transformer 11 kV/415 V 2 MVA (ganti)','Elektrik','Penggantian aset',780000,'AKTIF','s6',0,25,'Tinggi',null,'u3'],
-  ['Overhaul gearbox ball mill','Mekanikal','Penggantian aset',320000,'DITOLAK','s5',2,15,'Sederhana',null,'u4'],
-  ['Lampu LED high-bay kawasan pembungkusan','Elektrik','Penjimatan kos & tenaga',46000,'SELESAI','',0,30,'Rendah',1.2,'u3',44800],
-  ['Hammer & liner crusher primer','Kuari','Kapasiti / produktiviti',160000,'AKTIF','s7',0,40,'Tinggi',null,'u2',98000],
-  ['CCTV & kawalan akses pintu kilang','HSE','Keselamatan & pematuhan',72000,'AKTIF','s2',0,5,'Sederhana',null,'u8'],
-  ['Penganalisis XRF makmal kualiti','Pengeluaran','Kapasiti / produktiviti',540000,'AKTIF','s4',0,7,'Sederhana',3.4,'u5'],
-  ['Weighbridge digital pintu kuari','Kuari','Kapasiti / produktiviti',135000,'AKTIF','s3',0,4,'Sederhana',2.8,'u1'],
-  ['Pam pelincir girth gear kiln','Mekanikal','Penggantian aset',64000,'AKTIF','s5',1,3,'Tinggi',null,'u4'],
-  ['Kapasitor pembetulan faktor kuasa MSB 2','Elektrik','Penjimatan kos & tenaga',58000,'AKTIF','s5',0,7,'Sederhana',1.1,'u3']
-];
+const emptyCfg=()=>({phases:[],steps:[],users:[],depts:[],matrix:[{had:null,userId:''}]});
 
 let CFG, DATA;
 
@@ -465,35 +399,45 @@ function slaOf(it){if(it.status!=='AKTIF')return null;const {e}=ctx(it);if(!e||!
 function isApproved(it){if(it.status==='DITOLAK')return false;if(it.status==='SELESAI')return true;const {r,pos}=ctx(it);return pos>approvalEnd(r);}
 function inApproval(it){if(it.status!=='AKTIF')return false;const {r,pos}=ctx(it);return pos>0&&pos<=approvalEnd(r);}
 
-/* ===== Data contoh ===== */
-function seedData(){
-  return SEED.map((row,i)=>{
-    const [tajuk,jabatan,kategori,nilai,status,stepId,sub,hari,keutamaan,payback,pemohonId,sebenar]=row;
-    const it={id:`CPX-${YEAR}-${String(i+1).padStart(3,'0')}`,tajuk,jabatan,kategori,nilai,keutamaan,payback,pemohonId,sebenar:sebenar||null,
-      justifikasi:'Lihat kertas cadangan dilampirkan.',status,cur:status==='SELESAI'?null:{stepId,sub},sejarah:[]};
-    const r=routeOf(it);
-    const pos=status==='SELESAI'?r.length:r.findIndex(e=>e.stepId===stepId&&e.sub===sub);
-    const anchor=addDays(TODAY,-hari);
-    const last=status==='SELESAI'?r.length-1:pos-1;
-    let d=status==='DITOLAK'?addDays(anchor,-2):anchor, x=i*7+3;
-    const rnd=()=>{x=(x*9301+49297)%233280;return x/233280;};
-    const dates=[];
-    for(let j=last;j>=0;j--){dates[j]=d;const k=r[j].stepId;d=addDays(d,-(1+Math.floor(rnd()*(k==='s7'?40:k==='s6'?14:5))));}
-    for(let j=0;j<=last;j++) it.sejarah.push({stepId:r[j].stepId,sub:r[j].sub,langkah:r[j].step.nama,oleh:r[j].nama,jab:r[j].jab,tarikh:iso(dates[j]),tindakan:j===0?'Dihantar':'Disokong / lulus',ulasan:''});
-    if(status==='DITOLAK') it.sejarah.push({stepId:r[pos].stepId,sub:r[pos].sub,langkah:r[pos].step.nama,oleh:r[pos].nama,jab:r[pos].jab,tarikh:iso(anchor),tindakan:'Ditolak',ulasan:'Tangguh ke tahun depan — utamakan overhaul semasa shutdown tahunan.'});
-    it.masuk=iso(anchor); it.tarikhMohon=it.sejarah.length?it.sejarah[0].tarikh:iso(anchor);
-    return it;
-  });
-}
-
-/* ===== Simpanan (browser) ===== */
-const KEY_C='capex.cfg.v1',KEY_D='capex.data.v1';
-function save(){try{localStorage.setItem(KEY_C,JSON.stringify(CFG));localStorage.setItem(KEY_D,JSON.stringify(DATA));}catch(e){}}
+/* ===== Simpanan: pangkalan data artifak (db) — dalam Power Apps: SharePoint List =====
+   app/config          -> satu dokumen: fasa, langkah, pengguna, jabatan, matriks
+   requests/<ID>       -> satu dokumen setiap permohonan (dengan sejarah) */
+let DB=null, ONLINE=false, cfgQ=Promise.resolve(), cfgTimer=null, pendingRender=false;
+const clone=o=>JSON.parse(JSON.stringify(o));
 function validCfg(c){return c&&Array.isArray(c.phases)&&Array.isArray(c.steps)&&Array.isArray(c.users)&&Array.isArray(c.depts)&&Array.isArray(c.matrix)&&c.matrix.length;}
-function load(){
-  try{const c=JSON.parse(localStorage.getItem(KEY_C));const d=JSON.parse(localStorage.getItem(KEY_D));if(validCfg(c)&&Array.isArray(d)){CFG=c;DATA=d;return;}}catch(e){}
-  CFG=defaultCfg(); DATA=seedData();
+function banner(msg,err){const b=$('banner');b.hidden=!msg;b.textContent=msg||'';b.classList.toggle('err',!!err);}
+function writeErr(e){const c=e&&e.code;toast(c==='not_granted'||c==='unauthenticated'?'Anda tiada akses untuk simpan perubahan.':c==='quota_exceeded'?'Ruang simpanan penuh.':'Gagal simpan — cuba lagi.');}
+function save(){ // konfigurasi: digabung, satu tulisan pada satu masa
+  if(!ONLINE) return;
+  clearTimeout(cfgTimer);
+  cfgTimer=setTimeout(()=>{const body=clone(CFG);cfgQ=cfgQ.then(()=>DB.doc('app/config').set(body)).catch(writeErr);},500);
 }
+function saveReq(it){ if(ONLINE) DB.collection('requests').doc(it.id).set(clone(it)).catch(writeErr); }
+function deferRender(){
+  const a=document.activeElement;
+  if(a&&a.closest&&a.closest('main')&&a.matches('input,select,textarea')){pendingRender=true;return;}
+  if($('dlg').classList.contains('show')||$('drawer').classList.contains('show')){pendingRender=true;return;}
+  render();
+}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender&&!document.activeElement.matches?.('main input,main select,main textarea')&&!$('dlg').classList.contains('show')&&!$('drawer').classList.contains('show')){pendingRender=false;render();}},0));
+async function connectStore(){
+  banner('Menyambung ke simpanan…');
+  DB=await window.claude?.use?.('db').catch(()=>null);
+  if(!DB){banner('Simpanan tidak tersedia di sini (log masuk ke claude.ai dan buka pautan artifak). Perubahan tidak akan disimpan.',true);return;}
+  ONLINE=true;
+  let gotCfg=false,gotReq=false;
+  const t=setTimeout(()=>{if(!gotCfg||!gotReq)banner('Data belum dapat dicapai. Semak sambungan internet.',true);},10000);
+  const done=()=>{if(gotCfg&&gotReq){clearTimeout(t);banner('');}};
+  DB.doc('app/config').onSnapshot(snap=>{
+    const d=snap.exists?snap.data():null; CFG=validCfg(d)?clone(d):emptyCfg();
+    if(!snap.metadata.fromCache){gotCfg=true;done();} deferRender();
+  },e=>{clearTimeout(t);banner('Sambungan simpanan terputus. Muat semula halaman.',true);});
+  DB.collection('requests').onSnapshot(qs=>{
+    DATA=qs.docs.map(d=>clone(d.data()));
+    if(!qs.metadata.fromCache){gotReq=true;done();} deferRender();
+  },e=>{clearTimeout(t);banner('Sambungan simpanan terputus. Muat semula halaman.',true);});
+}
+CFG=emptyCfg(); DATA=[];
 
 /* ===== Format ===== */
 const fmtRM=n=>'RM'+(n>=1e6?(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'j':n>=1e3?Math.round(n/1e3)+'k':n);
@@ -511,20 +455,21 @@ function assigneeLabel(s){
 function hadLabel(i){const m=CFG.matrix[i],lo=i?CFG.matrix[i-1].had:0;return m.had==null?`> ${fmtRM(lo||0)}`:(lo?`${fmtRM(lo)} – ${fmtRM(m.had)}`:`≤ ${fmtRM(m.had)}`);}
 
 /* ===== Navigasi skrin ===== */
-let VIEW='dash';
+const VIEWS=['dashboard','workflow','pengguna'];
+let VIEW='dashboard';
 function show(v){
-  VIEW=['dash','wf','set'].includes(v)?v:'dash';
-  ['dash','wf','set'].forEach(k=>$('v-'+k).hidden=k!==VIEW);
+  VIEW=VIEWS.includes(v)?v:'dashboard';
+  VIEWS.forEach(k=>$('v-'+k).hidden=k!==VIEW);
   document.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('on',t.dataset.v===VIEW);t.setAttribute('aria-current',t.dataset.v===VIEW?'page':'false');});
-  $('btnNew').hidden=VIEW!=='dash';
+  $('btnNew').hidden=VIEW!=='dashboard';
   render();
 }
 /* Pratonton fail / iframe sandbox boleh menyekat history & hash — sentiasa dibalut try/catch */
 const getHash=()=>{try{return location.hash.slice(1);}catch(e){return '';}};
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{try{history.replaceState(null,'','#'+t.dataset.v);}catch(e){}show(t.dataset.v);});
 addEventListener('hashchange',()=>show(getHash()));
-document.querySelectorAll('a[href="#set"]').forEach(a=>a.onclick=e=>{e.preventDefault();show('set');});
-function render(){ if(VIEW==='dash') renderDash(); else if(VIEW==='wf') renderBoard(); else renderSettings(); }
+document.querySelectorAll('a[href="#pengguna"]').forEach(a=>a.onclick=e=>{e.preventDefault();try{history.replaceState(null,'','#pengguna');}catch(_){}show('pengguna');});
+function render(){ if(VIEW==='dashboard') renderDash(); else if(VIEW==='workflow') renderBoard(); else renderSettings(); }
 
 /* =================== DASHBOARD =================== */
 const F={step:'',q:'',jab:'',kat:'',sla:''};
@@ -576,6 +521,7 @@ function renderFlow(){
     return `<button class="step ${F.step===s.id?'on':''}" data-k="${s.id}"><div class="nm">${esc(s.nama)}</div><div class="who">${esc(assigneeLabel(s))}${s.sla?` · SLA ${s.sla} hari`:''}</div>
       <div class="row"><span class="ct num">${items.length}</span><span class="rm num">${fmtRM(items.reduce((a,b)=>a+b.it.nilai,0))}</span>${late?`<span class="late">⚠ ${late} lewat</span>`:''}</div>${extra}</button>`;
   };
+  if(!CFG.phases.length){$('flow').style.gridTemplateColumns='1fr';$('flow').innerHTML='<div class="empty">Belum ada workflow. Buka tab <b>Reka workflow</b> untuk tambah fasa dan langkah, atau Import JSON.</div>';$('terms').innerHTML='';return;}
   $('flow').style.gridTemplateColumns=`repeat(${CFG.phases.length},minmax(0,1fr))`;
   $('flow').innerHTML=CFG.phases.map(p=>{const st=CFG.steps.filter(s=>s.phaseId===p.id);
     return `<div class="lane" style="--pc:${phaseColor(p)}"><div class="lh"><span class="t">${esc(p.nama)}</span></div><div class="lb">${st.length?st.map(box).join('<div class="ar">▼</div>'):'<div class="empty">Tiada langkah</div>'}</div></div>`;}).join('');
@@ -696,9 +642,9 @@ function act(kind){
     toast(`${it.id}: ${e.step.nama} — selesai`);
   } else if(kind==='rej'){ it.sejarah.push({...h,tindakan:'Ditolak'}); it.status='DITOLAK'; toast(`${it.id} ditolak`); }
   else { it.sejarah.push({...h,tindakan:'Dikembalikan'}); it.cur={stepId:r[0].stepId,sub:r[0].sub}; it.dikembalikan=true; it.justifikasi+=`\n[Dikembalikan oleh ${e.nama}: ${note}]`; toast(`${it.id} dikembalikan kepada pemohon`); }
-  it.masuk=iso(TODAY); save(); renderDash(); openDrawer(it.id);
+  it.masuk=iso(TODAY); saveReq(it); renderDash(); openDrawer(it.id);
 }
-function closeAll(){['scrim','drawer','dlg'].forEach(i=>$(i).classList.remove('show'));$('tip').style.display='none';}
+function closeAll(){['scrim','drawer','dlg'].forEach(i=>$(i).classList.remove('show'));$('tip').style.display='none';if(pendingRender){pendingRender=false;render();}}
 ['dClose','dlgClose','scrim'].forEach(i=>$(i).onclick=closeAll);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
 
@@ -728,6 +674,7 @@ const deptOptions=(sel,first)=>(first!=null?opt('',first,sel):'')+CFG.depts.map(
 
 /* ----- Permohonan baru ----- */
 $('btnNew').onclick=()=>{
+  if(!CFG.users.length||CFG.steps.length<2){toast('Sediakan workflow dan pengguna dahulu.');return;}
   const f=dialog('Permohonan CAPEX baru',`
     <label class="full">Tajuk projek<input name="tajuk" required></label>
     <label>Pemohon<select name="pemohonId" id="nPem">${userOptions(CFG.users[0]&&CFG.users[0].id,false)}</select></label>
@@ -743,7 +690,7 @@ $('btnNew').onclick=()=>{
       const it={id,tajuk:v.tajuk,jabatan:v.jabatan,kategori:v.kategori,nilai,keutamaan:v.keutamaan,payback:v.payback?+v.payback:null,pemohonId:v.pemohonId,sebenar:null,justifikasi:v.justifikasi||'—',status:'AKTIF',sejarah:[],masuk:iso(TODAY),tarikhMohon:iso(TODAY)};
       const r=routeOf(it); if(r.length<2){toast('Workflow perlu sekurang-kurangnya 2 langkah.');return false;}
       it.sejarah.push({stepId:r[0].stepId,sub:r[0].sub,langkah:r[0].step.nama,oleh:r[0].nama,jab:r[0].jab,tarikh:iso(TODAY),tindakan:'Dihantar',ulasan:''});
-      it.cur={stepId:r[1].stepId,sub:r[1].sub}; DATA.push(it); save();
+      it.cur={stepId:r[1].stepId,sub:r[1].sub}; DATA.push(it); saveReq(it);
       F.step=''; renderDash(); toast(`${id} dihantar kepada ${r[1].nama}`);
     },{saveLabel:'Hantar permohonan'});
   const prev=()=>{const it={nilai:+$('nNilai').value||0,jabatan:$('nJab').value,pemohonId:$('nPem').value};
@@ -837,11 +784,9 @@ function editStep(id,phaseId){
 $('wfAddPhase').onclick=()=>editPhase(null);
 $('wfExport').onclick=()=>{
   const json=JSON.stringify({versi:1,dieksport:iso(TODAY),...CFG},null,2);
-  dialog('Eksport workflow (JSON)',`<label class="full">Salin teks ini atau muat turun sebagai fail .json<textarea id="exTxt" rows="12" readonly style="font:12px/1.4 Consolas,monospace">${esc(json)}</textarea></label>
-    <div class="full"><button type="button" class="btn" id="exDl">Muat turun fail</button></div>`,
+  dialog('Eksport workflow (JSON)',`<label class="full">Salin teks ini dan simpan sebagai fail .json<textarea id="exTxt" rows="12" readonly style="font:12px/1.4 Consolas,monospace">${esc(json)}</textarea></label>`,
     ()=>{const t=$('exTxt');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}
       if(navigator.clipboard){navigator.clipboard.writeText(json).then(()=>toast('Disalin.'),()=>toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.'));}else toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.');return false;},{saveLabel:'Salin'});
-  $('exDl').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download=`capex-workflow-${iso(TODAY)}.json`;document.body.appendChild(a);a.click();a.remove();}catch(e){toast('Muat turun disekat di sini — guna Salin.');}};
 };
 function applyImport(t){
   let c; try{c=JSON.parse(t);}catch(e){toast('JSON tidak sah.');return false;}
@@ -854,7 +799,6 @@ $('wfImport').onclick=()=>{
     v=>applyImport(v.json||''),{saveLabel:'Import'});
   $('imFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>{$('imTxt').value=t;});};
 };
-$('wfReset').onclick=()=>ask('Set semula workflow, pengguna, jabatan dan data permohonan ke contoh asal?',()=>{CFG=defaultCfg();DATA=seedData();save();render();toast('Dikembalikan ke contoh asal.');},'Set semula');
 /* Pengesahan dalam halaman (confirm() disekat dalam sesetengah pratonton) */
 function ask(msg,onYes,label='Ya'){dialog('Pengesahan',`<p class="full" style="margin:0;font-size:14px;color:var(--text)">${esc(msg)}</p>`,()=>{onYes();},{saveLabel:label});}
 
@@ -878,7 +822,7 @@ function renderSettings(){
   document.querySelectorAll('[data-dn]').forEach(el=>el.onchange=()=>{
     const d=CFG.depts[+el.dataset.dn],old=d.nama,nu=el.value.trim();
     if(!nu||(nu!==old&&D(nu))){toast('Nama jabatan kosong atau sudah wujud.');el.value=old;return;}
-    d.nama=nu; CFG.users.forEach(u=>{if(u.jabatan===old)u.jabatan=nu;}); CFG.steps.forEach(s=>{if(s.jabatan===old)s.jabatan=nu;}); DATA.forEach(it=>{if(it.jabatan===old)it.jabatan=nu;});
+    d.nama=nu; CFG.users.forEach(u=>{if(u.jabatan===old)u.jabatan=nu;}); CFG.steps.forEach(s=>{if(s.jabatan===old)s.jabatan=nu;}); DATA.forEach(it=>{if(it.jabatan===old){it.jabatan=nu;saveReq(it);}});
     save(); renderSettings();
   });
   document.querySelectorAll('[data-dk]').forEach(el=>el.onchange=()=>{CFG.depts[+el.dataset.dk].ketuaId=el.value;save();});
@@ -915,8 +859,6 @@ $('dAdd').onclick=()=>{let n='Jabatan baru',k=2;while(D(n))n='Jabatan baru '+k++
 $('mAdd').onclick=()=>{const n=CFG.matrix.length,prev=n>1?CFG.matrix[n-2].had:0;CFG.matrix.splice(n-1,0,{had:(prev||50000)*2,userId:''});save();renderSettings();};
 
 /* ===== INIT ===== */
-load();
-show(getHash()||'dash');
+show(getHash()||'dashboard');
+connectStore();
 </script>
-</body>
-</html>

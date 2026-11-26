@@ -3,96 +3,245 @@
   {
    "id": "p1",
    "nama": "Cipta",
-   "warna": 0
+   "warna": 0,
+   "w": 300
   },
   {
    "id": "p2",
    "nama": "Nilai",
-   "warna": 1
+   "warna": 1,
+   "w": 300
   },
   {
    "id": "p3",
    "nama": "Lulus",
-   "warna": 2
+   "warna": 2,
+   "w": 300
   },
   {
    "id": "p4",
    "nama": "Laksana",
-   "warna": 3
+   "warna": 3,
+   "w": 300
   }
  ],
- "steps": [
+ "nodes": [
+  {
+   "id": "mula",
+   "jenis": "mula",
+   "nama": "Mula",
+   "x": 122,
+   "y": 60
+  },
   {
    "id": "s1",
-   "phaseId": "p1",
-   "nama": "Hantar cadangan CAPEX",
    "jenis": "langkah",
+   "nama": "Hantar cadangan CAPEX",
    "userId": "@pemohon",
    "jabatan": "",
-   "sla": null
+   "sla": null,
+   "x": 45,
+   "y": 150
   },
   {
    "id": "s2",
-   "phaseId": "p1",
-   "nama": "Semakan Ketua Jabatan",
    "jenis": "langkah",
+   "nama": "Semakan Ketua Jabatan",
    "userId": "@ketua",
    "jabatan": "",
-   "sla": 3
+   "sla": 3,
+   "x": 45,
+   "y": 298
   },
   {
    "id": "s3",
-   "phaseId": "p2",
-   "nama": "Semakan teknikal",
    "jenis": "langkah",
+   "nama": "Semakan teknikal",
    "userId": "u9",
    "jabatan": "",
-   "sla": 5
+   "sla": 5,
+   "x": 345,
+   "y": 150
   },
   {
    "id": "s4",
-   "phaseId": "p2",
-   "nama": "Semakan kewangan & bajet",
    "jenis": "langkah",
+   "nama": "Semakan kewangan & bajet",
    "userId": "u10",
    "jabatan": "",
-   "sla": 5
+   "sla": 5,
+   "x": 345,
+   "y": 298
   },
   {
    "id": "s5",
-   "phaseId": "p3",
-   "nama": "Kelulusan ikut matriks",
    "jenis": "matriks",
+   "nama": "Kelulusan ikut matriks",
    "userId": "",
    "jabatan": "",
-   "sla": 5
+   "sla": 5,
+   "x": 645,
+   "y": 150
   },
   {
    "id": "s6",
-   "phaseId": "p4",
-   "nama": "Perolehan (PR/PO)",
    "jenis": "langkah",
+   "nama": "Perolehan (PR/PO)",
    "userId": "u11",
    "jabatan": "",
-   "sla": 21
+   "sla": 21,
+   "x": 945,
+   "y": 150
   },
   {
    "id": "s7",
-   "phaseId": "p4",
-   "nama": "Pelaksanaan projek",
    "jenis": "langkah",
+   "nama": "Pelaksanaan projek",
    "userId": "u17",
    "jabatan": "",
-   "sla": null
+   "sla": null,
+   "x": 945,
+   "y": 298
   },
   {
    "id": "s8",
-   "phaseId": "p4",
-   "nama": "Tutup & permodalan aset",
    "jenis": "langkah",
+   "nama": "Tutup & permodalan aset",
    "userId": "u12",
    "jabatan": "",
-   "sla": 10
+   "sla": 10,
+   "x": 945,
+   "y": 446
+  },
+  {
+   "id": "t_selesai",
+   "jenis": "tamat",
+   "hasil": "selesai",
+   "nama": "Ditutup",
+   "x": 970,
+   "y": 594
+  },
+  {
+   "id": "t_tolak",
+   "jenis": "tamat",
+   "hasil": "ditolak",
+   "nama": "Ditolak",
+   "x": 670,
+   "y": 348
+  }
+ ],
+ "edges": [
+  {
+   "id": "e1",
+   "from": "mula",
+   "to": "s1",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e2",
+   "from": "s1",
+   "to": "s2",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e3",
+   "from": "s2",
+   "to": "s3",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e4",
+   "from": "s3",
+   "to": "s4",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e5",
+   "from": "s4",
+   "to": "s5",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e6",
+   "from": "s5",
+   "to": "s6",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e7",
+   "from": "s6",
+   "to": "s7",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e8",
+   "from": "s7",
+   "to": "s8",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e9",
+   "from": "s8",
+   "to": "t_selesai",
+   "jenis": "lulus",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e10",
+   "from": "s2",
+   "to": "t_tolak",
+   "jenis": "tolak",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e11",
+   "from": "s3",
+   "to": "t_tolak",
+   "jenis": "tolak",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e12",
+   "from": "s4",
+   "to": "t_tolak",
+   "jenis": "tolak",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e13",
+   "from": "s5",
+   "to": "t_tolak",
+   "jenis": "tolak",
+   "min": null,
+   "max": null
+  },
+  {
+   "id": "e14",
+   "from": "s2",
+   "to": "s1",
+   "jenis": "kembali",
+   "min": null,
+   "max": null
   }
  ],
  "users": [

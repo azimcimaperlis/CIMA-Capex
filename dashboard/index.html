@@ -1,14 +1,16 @@
 <title>CAPEX Workflow</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
+/* Susun atur: skrin gaya Power Apps (header + tab), kanvas workflow dengan jalur fasa */
 :root{
   color-scheme:light;
   --bg:#f5f5f5; --surface:#ffffff; --surface-2:#fafafa; --border:#e0e0e0;
   --text:#242424; --text-2:#616161; --text-3:#8a8a8a;
   --brand:#0f6cbd; --brand-hover:#115ea3; --brand-soft:#ebf3fc;
   --series-1:#257de0; --series-2:#f47230;
-  --good:#0aac23; --good-text:#0e7a0d; --warn:#fbb315; --crit:#dc3c3d; --crit-text:#b10e1c;
+  --good:#0aac23; --good-text:#0e7a0d; --warn:#fbb315; --warn-text:#8a5a00; --crit:#dc3c3d; --crit-text:#b10e1c;
   --grid:#ececec; --shadow:0 1px 2px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+  --dot:#d6d6d6;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -17,7 +19,7 @@
     --text:#efefef; --text-2:#b3b3b3; --text-3:#8a8a8a;
     --brand:#479ef5; --brand-hover:#62abf5; --brand-soft:#1a2d44;
     --series-1:#338ced; --series-2:#e76624;
-    --good-text:#54c45e; --crit-text:#f1707b; --grid:#2e2e2e; --shadow:none;
+    --good-text:#54c45e; --warn-text:#fbb315; --crit-text:#f1707b; --grid:#2e2e2e; --shadow:none; --dot:#333;
   }
 }
 :root[data-theme="dark"]{
@@ -26,7 +28,7 @@
   --text:#efefef; --text-2:#b3b3b3; --text-3:#8a8a8a;
   --brand:#479ef5; --brand-hover:#62abf5; --brand-soft:#1a2d44;
   --series-1:#338ced; --series-2:#e76624;
-  --good-text:#54c45e; --crit-text:#f1707b; --grid:#2e2e2e; --shadow:none;
+  --good-text:#54c45e; --warn-text:#fbb315; --crit-text:#f1707b; --grid:#2e2e2e; --shadow:none; --dot:#333;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -35,7 +37,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
 a{color:var(--brand)}
 
-/* Header + tab (Power Apps: HeaderContainer + navigasi skrin) */
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--surface)}
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:16px;padding-block:0;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
 header h1{font-size:16px;font-weight:600;margin:0;white-space:nowrap}
@@ -46,11 +47,13 @@ nav.tabs{display:flex;gap:4px;align-self:stretch;overflow-x:auto;max-width:100%}
 header .sp{flex:1}
 .btn{border:1px solid var(--border);background:var(--surface);border-radius:4px;padding:6px 12px;cursor:pointer;min-height:32px;white-space:nowrap}
 .btn:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.45;cursor:default}
 .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn.primary:hover{background:var(--brand-hover)}
 .btn.danger{color:var(--crit-text)}
+.btn.warn{color:var(--warn-text)}
 .btn.sm{padding:2px 8px;min-height:26px;font-size:12px}
-.btn:focus-visible,.tab:focus-visible,.step:focus-visible,tr:focus-visible,.wcard:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.btn:focus-visible,.tab:focus-visible,tr:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 main{max-width:1440px;margin:0 auto;padding-block:16px 40px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:grid;gap:16px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:16px;min-width:0}
@@ -58,6 +61,8 @@ main{max-width:1440px;margin:0 auto;padding-block:16px 40px;padding-left:max(20p
 .card h2 .hint,.hint{font-weight:400;color:var(--text-3);font-size:12px}
 .card h2 .hint{margin-left:auto}
 .note{font-size:12px;color:var(--text-3);margin:10px 0 0}
+.banner{font-size:13px;padding:8px 12px;border-radius:6px;background:var(--brand-soft);color:var(--text)}
+.banner.err{background:color-mix(in srgb,var(--crit) 12%,var(--surface));color:var(--crit-text)}
 
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
@@ -67,30 +72,73 @@ main{max-width:1440px;margin:0 auto;padding-block:16px 40px;padding-left:max(20p
 .meter{height:6px;background:var(--grid);border-radius:3px;margin-top:8px;overflow:hidden}
 .meter i{display:block;height:100%;background:var(--series-1);border-radius:3px}
 
-/* Swimlane fasa (dashboard + editor) */
-.lanes{display:grid;gap:22px;align-items:stretch}
-.lane{position:relative;border-radius:8px;background:color-mix(in srgb,var(--pc) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--pc) 35%,var(--border));min-width:0}
-.lane:not(:last-child)::after{content:"";position:absolute;right:-18px;top:50%;transform:translateY(-50%);border:7px solid transparent;border-left:9px solid var(--text-3)}
-.lh{background:var(--pc);color:#fff;font-weight:600;padding:8px 10px;border-radius:7px 7px 0 0;text-transform:uppercase;letter-spacing:.06em;font-size:13px;display:flex;align-items:center;gap:4px;min-height:38px}
-.lh .t{flex:1;text-align:center}
-.lb{padding:10px;display:flex;flex-direction:column}
-.ar{text-align:center;color:var(--text-3);line-height:1;padding:4px 0;font-size:13px}
-.step{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;cursor:pointer}
-.step:hover{border-color:var(--brand)}
-.step.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand);background:var(--brand-soft)}
-.step .nm{font-weight:600;font-size:13px;line-height:1.3}
-.step .who{font-size:11px;color:var(--text-2);margin-top:2px}
-.step .row{display:flex;align-items:baseline;gap:8px;margin-top:4px}
-.step .ct{font-size:20px;font-weight:600}
-.step .rm{font-size:12px;color:var(--text-2)}
-.step .late{font-size:11px;color:var(--crit-text);font-weight:600;margin-left:auto}
-.ml{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-2);border-top:1px dashed var(--border);padding-top:3px;margin-top:3px}
-.ml b{color:var(--text)}
-.terms{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px;font-size:12px;color:var(--text-2)}
-.term{border:1px solid var(--border);background:var(--surface-2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px}
-.term.on{border-color:var(--brand);background:var(--brand-soft)}
-.term.ok{color:var(--good-text)} .term.no{color:var(--crit-text)}
-.terms b{color:var(--text)}
+/* ===== Kanvas workflow (dashboard: paparan; tab Reka workflow: editor) ===== */
+.vp{position:relative;height:min(70vh,700px);overflow:hidden;border:1px solid var(--border);border-radius:8px;background-color:var(--surface-2);background-image:radial-gradient(var(--dot) 1px,transparent 1px);background-size:20px 20px;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.vp.panning{cursor:grabbing}
+.dgwrap{overflow-x:auto;border-radius:8px}
+.vsz{position:relative}
+.world{position:absolute;left:0;top:0;transform-origin:0 0}
+.lane-bg{position:absolute;top:0;background:color-mix(in srgb,var(--pc) 7%,var(--surface));border-right:1px solid color-mix(in srgb,var(--pc) 28%,var(--border))}
+.lane-bg:first-child{border-left:1px solid color-mix(in srgb,var(--pc) 28%,var(--border))}
+.lane-hd{position:absolute;top:0;left:0;right:0;height:40px;background:var(--pc);color:#fff;font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+.edit .lane-hd{cursor:pointer}
+.lane-rs{position:absolute;top:0;right:-6px;width:12px;bottom:0;cursor:col-resize;z-index:2}
+.lane-rs::after{content:"";position:absolute;left:5px;top:44px;bottom:8px;width:2px;border-radius:1px;background:transparent}
+.lane-rs:hover::after{background:var(--brand)}
+svg.edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+.ep{fill:none;stroke-width:2}
+.ep.lulus{stroke:var(--text-3)}
+.ep.tolak{stroke:var(--crit);stroke-dasharray:7 5}
+.ep.kembali{stroke:var(--warn);stroke-dasharray:7 5}
+.ep.temp{stroke:var(--brand);stroke-dasharray:4 4}
+.hit{stroke:transparent;stroke-width:16;fill:none;pointer-events:stroke;cursor:pointer}
+.hit:hover+.ep{stroke-width:3}
+.elbl{position:absolute;transform:translate(-50%,-50%);font-size:11px;line-height:1.3;padding:1px 7px;border-radius:9px;background:var(--surface);border:1px solid currentColor;white-space:nowrap;z-index:1}
+.edit .elbl{cursor:pointer}
+.elbl.lulus{color:var(--text-2)} .elbl.tolak{color:var(--crit-text)} .elbl.kembali{color:var(--warn-text)}
+.nd{position:absolute;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;box-shadow:var(--shadow);font-size:12px;z-index:2}
+.edit .nd{cursor:move}
+.view .nd{cursor:pointer}
+.view .nd:hover{border-color:var(--brand)}
+.nd.on{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand)}
+.nd.sel{box-shadow:0 0 0 2px var(--brand)}
+.nd.drop{box-shadow:0 0 0 3px var(--brand)}
+.nd .nm{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nd .u{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.nd .u small{color:var(--text-2)}
+.nd .meta{display:flex;gap:4px;margin-top:4px;overflow:hidden}
+.chip{display:inline-block;font-size:11px;padding:0 6px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.nd.matriks{border-color:var(--brand)}
+.ml{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;font-size:11px;color:var(--text-2);border-top:1px dashed var(--border);padding-top:2px;margin-top:2px;height:20px;align-items:center}
+.ml b{color:var(--text);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.ml i{font-style:normal;font-weight:700;color:var(--text);min-width:14px;text-align:right}
+.nd .cnt{display:flex;align-items:baseline;gap:8px;margin-top:4px;padding-top:3px;border-top:1px solid var(--border)}
+.nd .cnt b{font-size:16px}
+.nd .cnt span{color:var(--text-2)}
+.nd .cnt .late{margin-left:auto;color:var(--crit-text);font-weight:600}
+.nd.mula{border-radius:50%;padding:0;display:grid;place-items:center;border:2px solid var(--good);font-weight:700;font-size:11px;color:var(--good-text);text-transform:uppercase;letter-spacing:.04em}
+.nd.tamat{border-radius:22px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13px;border-width:2px}
+.nd.tamat span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nd.tamat.selesai{border-color:var(--good);color:var(--good-text)}
+.nd.tamat.ditolak{border-color:var(--crit);color:var(--crit-text)}
+.nd.tamat.digantung{border-color:var(--warn);color:var(--warn-text)}
+.port{position:absolute;right:-9px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:var(--surface);border:2px solid var(--brand);cursor:crosshair;z-index:3;display:grid;place-items:center}
+.port::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.port:hover{background:var(--brand-soft);transform:scale(1.15)}
+.wtools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.wtools .sp{flex:1}
+.wtools .grp{display:flex;gap:4px;align-items:center}
+#zoomLbl{min-width:44px;text-align:center;font-size:12px;color:var(--text-2)}
+.elegend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:10px;align-items:center}
+.elegend span{display:inline-flex;align-items:center;gap:6px}
+.elegend svg{width:28px;height:8px}
+.issues{margin:10px 0 0;padding:0;list-style:none;font-size:13px;display:grid;gap:4px}
+.issues li.ok{color:var(--good-text)}
+.issues li.bad{color:var(--warn-text)}
+.flowfoot{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--text-2);align-items:center}
+.flowfoot span{display:inline-flex;align-items:center;gap:6px}
+.flowfoot svg{width:28px;height:8px}
+.flowfoot b{color:var(--text)}
 
 .grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
 
@@ -133,50 +181,27 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 .pill i{width:8px;height:8px;border-radius:2px;background:var(--pc)}
 .pill.rej{color:var(--crit-text);border-color:currentColor;background:transparent}
 .pill.done{color:var(--good-text);border-color:currentColor;background:transparent}
+.pill.hold{color:var(--warn-text);border-color:currentColor;background:transparent}
 .sla{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .sla.g .dot{background:var(--good)} .sla.w .dot{background:var(--warn)} .sla.c .dot{background:var(--crit)}
 .sla.c{color:var(--crit-text);font-weight:600}
 .empty{padding:20px;text-align:center;color:var(--text-3);font-size:13px}
 .pri-T{color:var(--crit-text);font-weight:600}
-
-/* Editor workflow */
-.board{display:flex;gap:34px;overflow-x:auto;padding:4px 4px 12px;align-items:flex-start}
-.board .lane{flex:0 0 260px}
-.board .lane:not(:last-child)::after{right:-26px;top:19px;transform:none}
-.lh .ib{border:0;background:transparent;color:#fff;cursor:pointer;border-radius:4px;padding:2px 6px;font-size:13px;opacity:.85}
-.lh .ib:hover{background:rgba(255,255,255,.2);opacity:1}
-.lh .ib:disabled{opacity:.3;cursor:default;background:none}
-.cards{padding:10px;min-height:90px;display:flex;flex-direction:column}
-.cards.over{background:color-mix(in srgb,var(--brand) 6%,transparent)}
-.wcard{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;cursor:grab;position:relative;box-shadow:var(--shadow)}
-.wcard+.wcard,.wcard+.phold,.phold+.wcard{margin-top:24px}
-.wcard+.wcard::before,.phold+.wcard::before{content:"↓";position:absolute;top:-21px;left:50%;transform:translateX(-50%);color:var(--text-3);font-size:13px}
-.wcard.dragging{opacity:.35}
-.wcard .nm{font-weight:600;font-size:13px}
-.wcard .u{font-size:12px;margin-top:4px}
-.wcard .u small{color:var(--text-2)}
-.chip{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);margin-top:4px;margin-right:4px}
-.chip.mxc{border-color:var(--brand);color:var(--brand)}
-.phold{height:46px;border:2px dashed var(--brand);border-radius:6px;background:var(--brand-soft)}
-.addstep{margin-top:12px;border:1px dashed var(--text-3);background:transparent;border-radius:6px;padding:8px;cursor:pointer;color:var(--text-2);width:100%}
-.addstep:hover{border-color:var(--brand);color:var(--brand)}
-.addphase{flex:0 0 160px;min-height:120px;border:1px dashed var(--text-3);border-radius:8px;background:transparent;color:var(--text-2);cursor:pointer}
-.addphase:hover{border-color:var(--brand);color:var(--brand)}
+.settings{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.settings .stack{display:grid;gap:16px}
+.warnbox{font-size:12px;color:var(--crit-text);margin-top:8px}
 .swatches{display:flex;gap:8px;flex-wrap:wrap}
 .swatches label{display:inline-flex}
 .swatches input{position:absolute;opacity:0;pointer-events:none}
 .swatches span{width:32px;height:32px;border-radius:6px;background:var(--pc);cursor:pointer;border:3px solid transparent}
 .swatches input:checked+span{border-color:var(--text)}
 .swatches input:focus-visible+span{outline:2px solid var(--brand);outline-offset:2px}
-.settings{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
-.settings .stack{display:grid;gap:16px}
-.warnbox{font-size:12px;color:var(--crit-text);margin-top:8px}
 
 /* Drawer + dialog */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;display:none}
 .scrim.show{display:block}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);z-index:31;border-left:1px solid var(--border);transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);z-index:31;border-left:1px solid var(--border);transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .drawer.show{transform:none}
 .dh{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
 .dh h3{margin:0;font-size:16px}
@@ -193,6 +218,8 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 .route .done .ic{border-color:var(--good);background:var(--good);color:#fff}
 .route .cur .ic{border-color:var(--brand);color:var(--brand)}
 .route .rej .ic{border-color:var(--crit);background:var(--crit);color:#fff}
+.route .ret .ic{border-color:var(--warn);background:var(--warn);color:#000}
+.route .pend{opacity:.7}
 .route .ph{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--pc);font-weight:700}
 .route .t{font-size:13px} .route .t small{display:block;color:var(--text-2);font-size:12px}
 .route .d{font-size:12px;color:var(--text-2);white-space:nowrap}
@@ -206,8 +233,6 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 .form .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .preview{grid-column:1/-1;background:var(--brand-soft);border-radius:6px;padding:10px 12px;font-size:13px}
 .preview ol{margin:4px 0 0;padding-left:20px}
-.banner{font-size:13px;padding:8px 12px;border-radius:6px;background:var(--brand-soft);color:var(--text)}
-.banner.err{background:color-mix(in srgb,var(--crit) 12%,var(--surface));color:var(--crit-text)}
 .tip{position:fixed;z-index:40;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.15);border-radius:6px;padding:8px 10px;font-size:12px;display:none;max-width:260px}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:13px;z-index:50;display:none;max-width:calc(100% - 32px)}
 
@@ -215,19 +240,16 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
   .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .grid2,.settings{grid-template-columns:1fr}
 }
-@media (max-width:760px){
-  #flow{grid-template-columns:1fr!important}
-  #flow .lane:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:-20px;transform:translateX(-50%);border:7px solid transparent;border-top:9px solid var(--text-3)}
-}
 @media (max-width:640px){
   main{padding-block:12px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   header{padding-block:8px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));gap:8px}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .brow{grid-template-columns:90px minmax(0,1fr)}
   .form{grid-template-columns:1fr}
-  .board .lane{flex-basis:230px}
+  .vp{height:62vh}
 }
 </style>
+
 <header>
   <h1>CAPEX</h1>
   <nav class="tabs" aria-label="Skrin">
@@ -238,16 +260,16 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
   <div class="sp"></div>
   <button class="btn primary" id="btnNew">+ Permohonan baru</button>
 </header>
+<div class="banner" id="banner" hidden style="margin:12px auto 0;max-width:1400px;width:calc(100% - 32px)"></div>
 
 <!-- ================= SKRIN 1: DASHBOARD ================= -->
-<div class="banner" id="banner" hidden style="margin:12px auto 0;max-width:1400px;width:calc(100% - 32px)"></div>
 <main id="v-dashboard">
   <section class="kpis" id="kpis"></section>
 
   <section class="card">
-    <h2>Process flow kelulusan CAPEX <span class="hint">Klik langkah untuk tapis senarai · ubah di tab Reka workflow</span></h2>
-    <div class="lanes" id="flow"></div>
-    <div class="terms" id="terms"></div>
+    <h2>Process flow kelulusan CAPEX <span class="hint">Klik kotak untuk tapis senarai · lukis di tab Reka workflow</span></h2>
+    <div class="dgwrap" id="flow"></div>
+    <div class="flowfoot" id="flowfoot"></div>
   </section>
 
   <section class="grid2">
@@ -263,7 +285,7 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
     <div class="card">
       <h2>Matriks had kelulusan <span class="hint"><a href="#pengguna">Ubah</a></span></h2>
       <table class="mx" id="matrixView"></table>
-      <p class="note">Kad "Kelulusan ikut matriks" dalam workflow dikembangkan kepada pelulus di atas, bermula dari tahap terendah sehingga had yang meliputi nilai permohonan.</p>
+      <p class="note">Kotak "Kelulusan ikut matriks" dalam workflow dikembangkan kepada pelulus di atas, dari tahap terendah sehingga had yang meliputi nilai permohonan.</p>
     </div>
   </section>
 
@@ -283,17 +305,23 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
   </section>
 </main>
 
-<!-- ================= SKRIN 2: REKA WORKFLOW ================= -->
+<!-- ================= SKRIN 2: REKA WORKFLOW (kanvas) ================= -->
 <main id="v-workflow" hidden>
   <section class="card">
-    <h2>Reka workflow CAPEX <span class="hint">Seret kad untuk susun semula · klik kad untuk ubah · disimpan automatik dalam browser ini</span></h2>
-    <div class="toolbar">
-      <button class="btn" id="wfAddPhase">+ Tambah fasa</button>
+    <h2>Reka workflow CAPEX <span class="hint">Seret kotak untuk alih · tarik ● ke kotak lain untuk sambung · klik garisan untuk ubah · seret ruang kosong untuk gerak</span></h2>
+    <div class="wtools">
+      <button class="btn" id="addStep">+ Langkah</button>
+      <button class="btn" id="addMx">+ Kelulusan matriks</button>
+      <button class="btn" id="addEnd">+ Tamat</button>
+      <button class="btn" id="addPhase">+ Fasa</button>
+      <span class="sp"></span>
+      <span class="grp"><button class="btn" id="zOut" aria-label="Zum keluar">−</button><span id="zoomLbl" class="num">100%</span><button class="btn" id="zIn" aria-label="Zum masuk">+</button><button class="btn" id="zFit">Muat skrin</button></span>
       <button class="btn" id="wfExport">Eksport JSON</button>
       <button class="btn" id="wfImport">Import JSON</button>
     </div>
-    <div class="board" id="board"></div>
-    <p class="note">Tolak pada mana-mana langkah → <b>Ditolak</b>. Selesai langkah terakhir → <b>Ditutup</b>. "(Pemohon)" dan "(Ketua jabatan pemohon)" ditentukan ikut setiap permohonan. Kad "Kelulusan ikut matriks" guna pelulus dalam tab Pengguna & jabatan.</p>
+    <div class="vp edit" id="vp"><div class="world" id="world"></div></div>
+    <div class="elegend" id="elegend"></div>
+    <ul class="issues" id="issues"></ul>
   </section>
 </main>
 
@@ -312,7 +340,7 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
         <div class="toolbar" style="margin:12px 0 0"><button class="btn" id="dAdd">+ Tambah jabatan</button></div>
         <p class="note">Bajet 0 = jabatan sokongan, tidak dipaparkan dalam carta bajet.</p>
       </section>
-      <section class="card" id="set-matrix">
+      <section class="card">
         <h2>Matriks had kelulusan</h2>
         <div class="tw"><table class="mx" style="min-width:420px"><thead><tr><th>Had atas (RM)</th><th>Pelulus</th><th></th></tr></thead><tbody id="mRows"></tbody></table></div>
         <div class="toolbar" style="margin:12px 0 0"><button class="btn" id="mAdd">+ Tambah tahap</button></div>
@@ -323,103 +351,167 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 </main>
 
 <div class="scrim" id="scrim"></div>
-
 <aside class="drawer" id="drawer" aria-label="Butiran permohonan">
   <div class="dh"><div><div class="num" id="dId" style="font-size:12px;color:var(--text-2)"></div><h3 id="dTitle"></h3></div><button class="btn x" id="dClose" aria-label="Tutup">✕</button></div>
   <div class="db" id="dBody"></div>
   <div class="df" id="dFoot"></div>
 </aside>
-
 <div class="modal" id="dlg" role="dialog" aria-modal="true">
   <div class="dh"><h3 id="dlgTitle"></h3><button class="btn x" id="dlgClose" aria-label="Tutup">✕</button></div>
   <form class="form" id="dlgForm"></form>
 </div>
-
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-/* Papar ralat sebenar (pratonton mungkin hanya tunjuk "Script error.") */
 addEventListener('error',e=>{const t=document.getElementById('toast');if(t&&e.message&&e.message!=='Script error.'){t.textContent='Ralat: '+e.message;t.style.display='block';}});
 /* =====================================================================
    MODEL DATA (dipetakan ke SharePoint List dalam Power Apps):
-   CFG.phases  -> CAPEX_Fasa      (Nama, Warna, Susunan)
-   CFG.steps   -> CAPEX_Langkah   (Nama, Fasa, Jenis, Pengguna, Jabatan, SLA, Susunan)
-   CFG.users   -> Office 365 Users / CAPEX_Pengguna
-   CFG.depts   -> CAPEX_Jabatan   (Nama, Ketua, Bajet)
-   CFG.matrix  -> CAPEX_Matriks   (Had, Pelulus)
-   DATA        -> CAPEX_Permohonan + CAPEX_Sejarah
+   CFG.phases -> CAPEX_Fasa    (Nama, Warna, Lebar, Susunan)
+   CFG.nodes  -> CAPEX_Langkah (Jenis: mula/langkah/matriks/tamat, Nama, Pengguna, Jabatan, SLA, Hasil, X, Y)
+   CFG.edges  -> CAPEX_Laluan  (Dari, Ke, Jenis: lulus/tolak/kembali, Min RM, Maks RM)
+   CFG.users  -> Office 365 Users / CAPEX_Pengguna
+   CFG.depts  -> CAPEX_Jabatan (Nama, Ketua, Bajet)
+   CFG.matrix -> CAPEX_Matriks (Had, Pelulus)
+   DATA       -> CAPEX_Permohonan + CAPEX_Sejarah
    ===================================================================== */
 const DAY=864e5;
 const TODAY=(()=>{const d=new Date();d.setHours(0,0,0,0);return d;})();
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const parse=s=>{const [y,m,d]=String(s).split('-').map(Number);return new Date(y,m-1,d);};
 const daysSince=s=>Math.round((TODAY-parse(s))/DAY);
-const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
 const uid=p=>p+Math.random().toString(36).slice(2,8);
 const PC=['#2563c9','#c85a24','#1b8a5e','#3d4b5f','#7a52cc','#9a6a0a'];
 const KATEGORI=['Penggantian aset','Keselamatan & pematuhan','Kapasiti / produktiviti','Penjimatan kos & tenaga','Alam sekitar'];
 const YEAR=TODAY.getFullYear();
+const LANE_W=300;
+const $=id=>document.getElementById(id);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtRM=n=>'RM'+(n>=1e6?(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'j':n>=1e3?Math.round(n/1e3)+'k':n);
+const fmtFull=n=>Number(n).toLocaleString('ms-MY');
+const fmtDate=s=>parse(s).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'});
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2800);}
 
-const emptyCfg=()=>({phases:[],steps:[],users:[],depts:[],matrix:[{had:null,userId:''}]});
+let CFG, DATA=[];
+const mulaNode=()=>({id:'mula',jenis:'mula',nama:'Mula',x:122,y:60});
+const emptyCfg=()=>({phases:[],nodes:[mulaNode()],edges:[],users:[],depts:[],matrix:[{had:null,userId:''}]});
 
-let CFG, DATA;
+/* Tukar format lama (senarai langkah ikut fasa) kepada kanvas (kotak + garisan) */
+function migrate(c){
+  if(!c||!Array.isArray(c.phases)||!Array.isArray(c.users)||!Array.isArray(c.depts)||!Array.isArray(c.matrix)||!c.matrix.length) return null;
+  if(Array.isArray(c.nodes)&&Array.isArray(c.edges)){
+    c.phases.forEach(p=>{p.w=p.w||LANE_W;});
+    if(!c.nodes.some(n=>n.jenis==='mula')) c.nodes.unshift(mulaNode());
+    return c;
+  }
+  if(!Array.isArray(c.steps)) return null;
+  const phases=c.phases.map(p=>({...p,w:LANE_W})), nodes=[], edges=[], ord=[], bottom={};
+  const hView=s=>s.jenis==='matriks'?50+20*c.matrix.length+28:108;
+  phases.forEach((p,i)=>{let y=150;c.steps.filter(s=>s.phaseId===p.id).forEach(s=>{
+    const n={id:s.id,jenis:s.jenis==='matriks'?'matriks':'langkah',nama:s.nama,userId:s.userId||'',jabatan:s.jabatan||'',sla:s.sla??null,x:i*LANE_W+45,y};
+    nodes.push(n);ord.push(n);y+=hView(s)+40;});bottom[p.id]=y;});
+  nodes.unshift(mulaNode());
+  const E=(from,to,jenis)=>edges.push({id:uid('e'),from,to,jenis,min:null,max:null});
+  if(ord.length){
+    E('mula',ord[0].id,'lulus');
+    for(let i=0;i<ord.length-1;i++) E(ord[i].id,ord[i+1].id,'lulus');
+    const iLast=phases.length-1, last=ord[ord.length-1];
+    nodes.push({id:'t_selesai',jenis:'tamat',hasil:'selesai',nama:'Ditutup',x:iLast*LANE_W+70,y:bottom[phases[iLast].id]});
+    E(last.id,'t_selesai','lulus');
+    const mxI=ord.findIndex(n=>n.jenis==='matriks'), endI=mxI<0?Math.min(ord.length-1,3):mxI;
+    const mxPhase=c.steps.find(s=>s.id===ord[endI].id).phaseId, pi=phases.findIndex(p=>p.id===mxPhase);
+    nodes.push({id:'t_tolak',jenis:'tamat',hasil:'ditolak',nama:'Ditolak',x:pi*LANE_W+70,y:bottom[mxPhase]});
+    for(let i=1;i<=endI;i++) E(ord[i].id,'t_tolak','tolak');
+    if(ord.length>1) E(ord[1].id,ord[0].id,'kembali');
+  }
+  return {phases,nodes,edges,users:c.users,depts:c.depts,matrix:c.matrix};
+}
 
-/* ===== Enjin workflow ===== */
+/* ===== Enjin workflow (graf) ===== */
 const U=id=>CFG.users.find(u=>u.id===id);
 const D=n=>CFG.depts.find(d=>d.nama===n);
 const P=id=>CFG.phases.find(p=>p.id===id);
-const S=id=>CFG.steps.find(s=>s.id===id);
+const N=id=>CFG.nodes.find(n=>n.id===id);
 const phaseColor=p=>PC[(p?p.warna:3)%PC.length];
-const orderedSteps=()=>CFG.phases.flatMap(p=>CFG.steps.filter(s=>s.phaseId===p.id));
-function matrixFor(nilai){const out=[];for(let i=0;i<CFG.matrix.length;i++){out.push(i);const h=CFG.matrix[i].had;if(h==null||nilai<=h)break;}return out;}
+const outs=(id,j)=>CFG.edges.filter(e=>e.from===id&&(!j||e.jenis===j));
+const hasCond=e=>e.min!=null||e.max!=null;
+const condOk=(e,v)=>(e.min==null||v>e.min)&&(e.max==null||v<=e.max);
+function pick(id,j,v){const es=outs(id,j);return es.filter(hasCond).find(e=>condOk(e,v))||es.find(e=>!hasCond(e))||null;}
+const startNode=()=>CFG.nodes.find(n=>n.jenis==='mula');
+function firstNode(v){const s=startNode(),e=s&&pick(s.id,'lulus',v);return e?N(e.to):null;}
+function levels(nilai){const out=[];for(let i=0;i<CFG.matrix.length;i++){out.push(i);const h=CFG.matrix[i].had;if(h==null||nilai<=h)break;}return out;}
 function resolve(userId,it){
   if(userId==='@pemohon'){const u=U(it.pemohonId);return {nama:u?u.nama:'Pemohon',jawatan:'Pemohon',jab:it.jabatan};}
   if(userId==='@ketua'){const d=D(it.jabatan),u=d&&U(d.ketuaId);return {nama:u?u.nama:'(Ketua belum ditetapkan)',jawatan:'Ketua Jabatan',jab:it.jabatan};}
   const u=U(userId);return u?{nama:u.nama,jawatan:u.jawatan,jab:u.jabatan}:{nama:'(Belum ditetapkan)',jawatan:'',jab:''};
 }
-function routeOf(it){
-  const r=[];
-  orderedSteps().forEach(s=>{
-    if(s.jenis==='matriks') matrixFor(it.nilai).forEach(i=>{const a=resolve(CFG.matrix[i].userId,it);r.push({stepId:s.id,sub:i,step:s,...a,jab:s.jabatan||a.jab});});
-    else {const a=resolve(s.userId,it);r.push({stepId:s.id,sub:0,step:s,...a,jab:s.jabatan||a.jab});}
-  });
-  return r;
+function entry(n,sub,it){
+  if(n.jenis==='matriks'){const a=resolve((CFG.matrix[sub]||{}).userId,it);return {stepId:n.id,sub,step:n,...a};}
+  if(n.jenis==='langkah'){const a=resolve(n.userId,it);return {stepId:n.id,sub:0,step:n,...a,jab:n.jabatan||a.jab};}
+  return {stepId:n.id,sub:0,step:n,nama:n.nama,jawatan:'',jab:''};
+}
+/* Laluan dijangka dari kedudukan semasa, ikut garisan Lulus */
+function project(it,n,sub){
+  const out=[],seen=new Set();let s=sub||0;
+  while(n&&out.length<80){
+    if(seen.has(n.id)) break; seen.add(n.id);
+    if(n.jenis==='tamat'){out.push(entry(n,0,it));break;}
+    if(n.jenis==='matriks'){const L=levels(it.nilai);for(let k=s;k<L.length;k++)out.push(entry(n,k,it));}
+    else if(n.jenis==='langkah') out.push(entry(n,0,it));
+    const e=pick(n.id,'lulus',it.nilai); n=e?N(e.to):null; s=0;
+  }
+  return out;
 }
 function ctx(it){
-  const r=routeOf(it);
-  if(it.status==='SELESAI') return {r,pos:r.length,e:null};
-  let pos=r.findIndex(e=>e.stepId===it.cur.stepId&&e.sub===it.cur.sub);
-  if(pos<0){const same=r.map((e,i)=>e.stepId===it.cur.stepId?i:-1).filter(i=>i>=0);pos=same.length?same[same.length-1]:0;}
-  return {r,pos,e:r[pos]};
+  if(it.status!=='AKTIF') return {node:null,e:null};
+  let node=it.cur&&N(it.cur.stepId), sub=it.cur?(it.cur.sub||0):0;
+  if(!node||node.jenis==='mula'||node.jenis==='tamat'){node=firstNode(it.nilai);sub=0;}
+  if(!node) return {node:null,e:null};
+  if(node.jenis==='matriks') sub=Math.max(0,Math.min(sub,levels(it.nilai).length-1)); else sub=0;
+  return {node,sub,e:entry(node,sub,it)};
 }
-function approvalEnd(r){let k=-1;r.forEach((e,i)=>{if(e.step.jenis==='matriks')k=i;});return k<0?r.length-1:k;}
 const hariDi=it=>daysSince(it.masuk);
 function slaOf(it){if(it.status!=='AKTIF')return null;const {e}=ctx(it);if(!e||!e.step.sla)return null;const h=hariDi(it),s=e.step.sla;return h>s?'c':h>=s*0.8?'w':'g';}
-function isApproved(it){if(it.status==='DITOLAK')return false;if(it.status==='SELESAI')return true;const {r,pos}=ctx(it);return pos>approvalEnd(r);}
-function inApproval(it){if(it.status!=='AKTIF')return false;const {r,pos}=ctx(it);return pos>0&&pos<=approvalEnd(r);}
+const isLulusTx=h=>/lulus/i.test(h.tindakan);
+function passedMatrix(it){const L=levels(it.nilai).length;return it.sejarah.some(h=>{const n=N(h.stepId);return n&&n.jenis==='matriks'&&h.sub===L-1&&isLulusTx(h);});}
+const hasMatrix=()=>CFG.nodes.some(n=>n.jenis==='matriks');
+function isApproved(it){if(it.status==='SELESAI')return true;if(it.status!=='AKTIF')return false;return hasMatrix()&&passedMatrix(it);}
+function inApproval(it){if(it.status!=='AKTIF'||isApproved(it))return false;const {node}=ctx(it),f=firstNode(it.nilai);return !!node&&(!f||node.id!==f.id);}
+const HASIL_STATUS={selesai:'SELESAI',ditolak:'DITOLAK',digantung:'DIGANTUNG'};
+const STATUS_HASIL={SELESAI:'selesai',DITOLAK:'ditolak',DIGANTUNG:'digantung'};
+function tamatOf(it){
+  if(it.status==='AKTIF') return null;
+  const a=it.akhir&&N(it.akhir); if(a&&a.jenis==='tamat') return a;
+  return CFG.nodes.find(n=>n.jenis==='tamat'&&n.hasil===STATUS_HASIL[it.status])||null;
+}
+function actionsFor(it){
+  const {node,sub}=ctx(it); if(!node) return {};
+  const internal=node.jenis==='matriks'&&sub<levels(it.nilai).length-1;
+  return {node,internal,lulus:internal?{internal:true}:pick(node.id,'lulus',it.nilai),tolak:pick(node.id,'tolak',it.nilai),kembali:pick(node.id,'kembali',it.nilai)};
+}
+function goEdge(it,edge){
+  const t=N(edge.to); if(!t) return;
+  if(t.jenis==='tamat'){it.status=HASIL_STATUS[t.hasil]||'SELESAI';it.akhir=t.id;it.cur={stepId:t.id,sub:0};}
+  else it.cur={stepId:t.id,sub:0};
+}
 
 /* ===== Simpanan: pangkalan data artifak (db) — dalam Power Apps: SharePoint List =====
-   app/config          -> satu dokumen: fasa, langkah, pengguna, jabatan, matriks
-   requests/<ID>       -> satu dokumen setiap permohonan (dengan sejarah) */
-let DB=null, ONLINE=false, cfgQ=Promise.resolve(), cfgTimer=null, pendingRender=false;
-const clone=o=>JSON.parse(JSON.stringify(o));
-function validCfg(c){return c&&Array.isArray(c.phases)&&Array.isArray(c.steps)&&Array.isArray(c.users)&&Array.isArray(c.depts)&&Array.isArray(c.matrix)&&c.matrix.length;}
+   app/config     -> satu dokumen: fasa, kotak, garisan, pengguna, jabatan, matriks
+   requests/<ID>  -> satu dokumen setiap permohonan (dengan sejarah) */
+let DB=null, ONLINE=false, cfgQ=Promise.resolve(), cfgTimer=null, pendingRender=false, DRAG=null;
 function banner(msg,err){const b=$('banner');b.hidden=!msg;b.textContent=msg||'';b.classList.toggle('err',!!err);}
 function writeErr(e){const c=e&&e.code;toast(c==='not_granted'||c==='unauthenticated'?'Anda tiada akses untuk simpan perubahan.':c==='quota_exceeded'?'Ruang simpanan penuh.':'Gagal simpan — cuba lagi.');}
-function save(){ // konfigurasi: digabung, satu tulisan pada satu masa
+function save(){
   if(!ONLINE) return;
   clearTimeout(cfgTimer);
   cfgTimer=setTimeout(()=>{const body=clone(CFG);cfgQ=cfgQ.then(()=>DB.doc('app/config').set(body)).catch(writeErr);},500);
 }
 function saveReq(it){ if(ONLINE) DB.collection('requests').doc(it.id).set(clone(it)).catch(writeErr); }
-function deferRender(){
-  const a=document.activeElement;
-  if(a&&a.closest&&a.closest('main')&&a.matches('input,select,textarea')){pendingRender=true;return;}
-  if($('dlg').classList.contains('show')||$('drawer').classList.contains('show')){pendingRender=true;return;}
-  render();
-}
-document.addEventListener('focusout',()=>setTimeout(()=>{if(pendingRender&&!document.activeElement.matches?.('main input,main select,main textarea')&&!$('dlg').classList.contains('show')&&!$('drawer').classList.contains('show')){pendingRender=false;render();}},0));
+const busy=()=>!!DRAG||$('dlg').classList.contains('show')||$('drawer').classList.contains('show')||!!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('main input,main select,main textarea'));
+function deferRender(){ if(busy()){pendingRender=true;return;} render(); }
+function flushRender(){ if(pendingRender&&!busy()){pendingRender=false;render();} }
+document.addEventListener('focusout',()=>setTimeout(flushRender,0));
 async function connectStore(){
   banner('Menyambung ke simpanan…');
   DB=await window.claude?.use?.('db').catch(()=>null);
@@ -428,31 +520,24 @@ async function connectStore(){
   let gotCfg=false,gotReq=false;
   const t=setTimeout(()=>{if(!gotCfg||!gotReq)banner('Data belum dapat dicapai. Semak sambungan internet.',true);},10000);
   const done=()=>{if(gotCfg&&gotReq){clearTimeout(t);banner('');}};
+  const lost=()=>{clearTimeout(t);banner('Sambungan simpanan terputus. Muat semula halaman.',true);};
   DB.doc('app/config').onSnapshot(snap=>{
-    const d=snap.exists?snap.data():null; CFG=validCfg(d)?clone(d):emptyCfg();
+    const d=snap.exists?migrate(clone(snap.data())):null; CFG=d||emptyCfg();
     if(!snap.metadata.fromCache){gotCfg=true;done();} deferRender();
-  },e=>{clearTimeout(t);banner('Sambungan simpanan terputus. Muat semula halaman.',true);});
+  },lost);
   DB.collection('requests').onSnapshot(qs=>{
     DATA=qs.docs.map(d=>clone(d.data()));
     if(!qs.metadata.fromCache){gotReq=true;done();} deferRender();
-  },e=>{clearTimeout(t);banner('Sambungan simpanan terputus. Muat semula halaman.',true);});
+  },lost);
 }
-CFG=emptyCfg(); DATA=[];
+CFG=emptyCfg();
 
-/* ===== Format ===== */
-const fmtRM=n=>'RM'+(n>=1e6?(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'j':n>=1e3?Math.round(n/1e3)+'k':n);
-const fmtFull=n=>Number(n).toLocaleString('ms-MY');
-const fmtDate=s=>parse(s).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'});
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const $=id=>document.getElementById(id);
-function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600);}
-function assigneeLabel(s){
-  if(s.jenis==='matriks') return 'Ikut matriks had';
-  if(s.userId==='@pemohon') return '(Pemohon)'+(s.jabatan?' · '+s.jabatan:'');
-  if(s.userId==='@ketua') return '(Ketua jabatan pemohon)';
-  const u=U(s.userId); return u?`${u.nama} · ${s.jabatan||u.jabatan}`:'(Belum ditetapkan)';
-}
-function hadLabel(i){const m=CFG.matrix[i],lo=i?CFG.matrix[i-1].had:0;return m.had==null?`> ${fmtRM(lo||0)}`:(lo?`${fmtRM(lo)} – ${fmtRM(m.had)}`:`≤ ${fmtRM(m.had)}`);}
+/* ===== Label ===== */
+function whoLabel(n){if(n.userId==='@pemohon')return '(Pemohon)';if(n.userId==='@ketua')return '(Ketua jabatan pemohon)';const u=U(n.userId);return u?u.nama:'(Belum ditetapkan)';}
+function deptLabel(n){if(n.jabatan)return n.jabatan;if(n.userId&&n.userId.startsWith('@'))return 'Jabatan pemohon';const u=U(n.userId);return u?u.jabatan:'—';}
+function hadLabel(i){const m=CFG.matrix[i],lo=i?CFG.matrix[i-1].had:0;return m.had==null?`> ${fmtRM(lo||0)}`:(lo?`${fmtRM(lo)}–${fmtRM(m.had)}`:`≤ ${fmtRM(m.had)}`);}
+function condLabel(e){if(e.min!=null&&e.max!=null)return `${fmtRM(e.min)}–${fmtRM(e.max)}`;if(e.min!=null)return `> ${fmtRM(e.min)}`;if(e.max!=null)return `≤ ${fmtRM(e.max)}`;return '';}
+const JENIS_LBL={lulus:'Lulus',tolak:'Tolak',kembali:'Kembali'};
 
 /* ===== Navigasi skrin ===== */
 const VIEWS=['dashboard','workflow','pengguna'];
@@ -464,21 +549,94 @@ function show(v){
   $('btnNew').hidden=VIEW!=='dashboard';
   render();
 }
-/* Pratonton fail / iframe sandbox boleh menyekat history & hash — sentiasa dibalut try/catch */
 const getHash=()=>{try{return location.hash.slice(1);}catch(e){return '';}};
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{try{history.replaceState(null,'','#'+t.dataset.v);}catch(e){}show(t.dataset.v);});
+const goView=v=>{try{history.replaceState(null,'','#'+v);}catch(e){}show(v);};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>goView(t.dataset.v));
 addEventListener('hashchange',()=>show(getHash()));
-document.querySelectorAll('a[href="#pengguna"]').forEach(a=>a.onclick=e=>{e.preventDefault();try{history.replaceState(null,'','#pengguna');}catch(_){}show('pengguna');});
-function render(){ if(VIEW==='dashboard') renderDash(); else if(VIEW==='workflow') renderBoard(); else renderSettings(); }
+document.querySelectorAll('a[href="#pengguna"]').forEach(a=>a.onclick=e=>{e.preventDefault();goView('pengguna');});
+function render(){ if(VIEW==='dashboard') renderDash(); else if(VIEW==='workflow') renderCanvas(); else renderSettings(); }
+
+/* =================== KANVAS (dikongsi: paparan & editor) =================== */
+function laneLayout(){let x=0;return CFG.phases.map(p=>{const r={p,x,w:p.w||LANE_W};x+=r.w;return r;});}
+function size(n,mode){
+  const v=mode==='view';
+  if(n.jenis==='mula') return [56,56];
+  if(n.jenis==='tamat') return [160,44];
+  if(n.jenis==='matriks') return [220,50+20*CFG.matrix.length+(v?28:0)];
+  return [210,80+(v?28:0)];
+}
+function dims(mode){
+  const L=laneLayout(); let W=L.length?L[L.length-1].x+L[L.length-1].w:0, H=440;
+  CFG.nodes.forEach(n=>{const [w,h]=size(n,mode);W=Math.max(W,n.x+w+40);H=Math.max(H,n.y+h+60);});
+  return {L,W:Math.max(W,600),H};
+}
+function laneAt(x){const L=laneLayout();if(!L.length)return null;return L.find(r=>x>=r.x&&x<r.x+r.w)||(x<0?L[0]:L[L.length-1]);}
+const phaseOfNode=n=>{const [w]=size(n,'edit');const r=laneAt(n.x+w/2);return r?r.p:null;};
+function anchors(e,mode){
+  const a=N(e.from),b=N(e.to); if(!a||!b) return null;
+  const [aw,ah]=size(a,mode),[bw,bh]=size(b,mode);
+  const ac={x:a.x+aw/2,y:a.y+ah/2},bc={x:b.x+bw/2,y:b.y+bh/2},dx=bc.x-ac.x,dy=bc.y-ac.y;
+  let p0,p3,n0,n3;
+  if(e.jenis==='kembali'){if(Math.abs(dx)<Math.max(aw,bw)/2){p0={x:a.x,y:ac.y};p3={x:b.x,y:bc.y};n0={x:-1,y:0};n3={x:-1,y:0};}else{p0={x:ac.x,y:a.y};p3={x:bc.x,y:b.y};n0={x:0,y:-1};n3={x:0,y:-1};}}
+  else if(Math.abs(dy)>(ah+bh)/2+16&&Math.abs(dx)<Math.abs(dy)*1.6){
+    if(dy>0){p0={x:ac.x,y:a.y+ah};p3={x:bc.x,y:b.y};n0={x:0,y:1};n3={x:0,y:-1};}
+    else{p0={x:ac.x,y:a.y};p3={x:bc.x,y:b.y+bh};n0={x:0,y:-1};n3={x:0,y:1};}
+  }
+  else if(dx>=0){p0={x:a.x+aw,y:ac.y};p3={x:b.x,y:bc.y};n0={x:1,y:0};n3={x:-1,y:0};}
+  else{p0={x:a.x,y:ac.y};p3={x:b.x+bw,y:bc.y};n0={x:-1,y:0};n3={x:1,y:0};}
+  const dist=Math.hypot(p3.x-p0.x,p3.y-p0.y);
+  const d=e.jenis==='kembali'?Math.max(50,dist*0.3):Math.max(30,dist*0.4);
+  const p1={x:p0.x+n0.x*d,y:p0.y+n0.y*d},p2={x:p3.x+n3.x*d,y:p3.y+n3.y*d};
+  return {d:`M${p0.x},${p0.y} C${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`,m:{x:(p0.x+3*p1.x+3*p2.x+p3.x)/8,y:(p0.y+3*p1.y+3*p2.y+p3.y)/8}};
+}
+const markers=mode=>`<defs>${['lulus','tolak','kembali','temp'].map(j=>`<marker id="ar-${mode}-${j}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(${j==='lulus'?'--text-3':j==='tolak'?'--crit':j==='kembali'?'--warn':'--brand'})"/></marker>`).join('')}</defs>`;
+function countsView(){
+  const c={};CFG.nodes.forEach(n=>c[n.id]={n:0,rm:0,late:0,lv:[]});
+  DATA.forEach(it=>{
+    if(it.status==='AKTIF'){const {node,sub}=ctx(it);if(!node)return;const x=c[node.id];x.n++;x.rm+=it.nilai;if(slaOf(it)==='c')x.late++;if(node.jenis==='matriks')x.lv[sub]=(x.lv[sub]||0)+1;}
+    else{const t=tamatOf(it);if(t){c[t.id].n++;c[t.id].rm+=it.nilai;}}
+  });
+  return c;
+}
+let SEL=null;
+function nodeHTML(n,mode,cnt){
+  const [w,h]=size(n,mode), st=`left:${n.x}px;top:${n.y}px;width:${w}px;height:${h}px`;
+  const cls=(mode==='edit'&&SEL===n.id?' sel':'')+(mode==='view'&&F.step===n.id?' on':'');
+  const port=mode==='edit'&&n.jenis!=='tamat'?'<span class="port" title="Tarik ke kotak lain untuk sambung"></span>':'';
+  if(n.jenis==='mula') return `<div class="nd mula${cls}" data-n="${n.id}" style="${st}">Mula${port}</div>`;
+  if(n.jenis==='tamat'){const ic={selesai:'✓',ditolak:'✕',digantung:'⏸'}[n.hasil]||'■';return `<div class="nd tamat ${n.hasil}${cls}" data-n="${n.id}" style="${st}"><span>${ic} ${esc(n.nama)}</span>${mode==='view'?`<b class="num">${cnt.n}</b>`:''}</div>`;}
+  let body;
+  if(n.jenis==='matriks') body=CFG.matrix.map((m,i)=>{const u=U(m.userId);return `<div class="ml"><span class="num">${hadLabel(i)}</span><b>${esc(u?u.nama:'—')}</b>${mode==='view'?`<i class="num">${cnt.lv[i]||0}</i>`:'<i></i>'}</div>`;}).join('');
+  else{const u=U(n.userId);body=`<div class="u">👤 ${esc(whoLabel(n))}${u?` <small>${esc(u.jawatan)}</small>`:''}</div><div class="meta"><span class="chip">🏢 ${esc(deptLabel(n))}</span>${n.sla?`<span class="chip">⏱ SLA ${n.sla} hari</span>`:''}</div>`;}
+  const foot=mode==='view'?`<div class="cnt"><b class="num">${cnt.n}</b><span class="num">${fmtRM(cnt.rm)}</span>${cnt.late?`<span class="late">⚠ ${cnt.late} lewat</span>`:''}</div>`:'';
+  return `<div class="nd ${n.jenis}${cls}" data-n="${n.id}" style="${st}"><div class="nm">${n.jenis==='matriks'?'⚖ ':''}${esc(n.nama)}</div>${body}${foot}${port}</div>`;
+}
+function worldHTML(mode){
+  const {L,W,H}=dims(mode), cnt=mode==='view'?countsView():{};
+  const lanes=L.map(r=>`<div class="lane-bg" style="left:${r.x}px;width:${r.w}px;height:${H}px;--pc:${phaseColor(r.p)}"><div class="lane-hd" data-p="${r.p.id}">${esc(r.p.nama)}${mode==='edit'?' <span aria-hidden="true">✎</span>':''}</div>${mode==='edit'?`<div class="lane-rs" data-p="${r.p.id}" title="Seret untuk ubah lebar"></div>`:''}</div>`).join('');
+  let paths='',lbls='';
+  CFG.edges.forEach(e=>{
+    const g=anchors(e,mode); if(!g) return;
+    paths+=(mode==='edit'?`<path class="hit" data-e="${e.id}" d="${g.d}"/>`:'')+`<path class="ep ${e.jenis}" d="${g.d}" marker-end="url(#ar-${mode}-${e.jenis})"/>`;
+    const t=[e.jenis!=='lulus'?JENIS_LBL[e.jenis]:'',condLabel(e)].filter(Boolean).join(' · ');
+    if(t) lbls+=`<div class="elbl ${e.jenis}" data-e="${e.id}" style="left:${g.m.x}px;top:${g.m.y}px">${esc(t)}</div>`;
+  });
+  const svg=`<svg class="edges" width="${W}" height="${H}">${markers(mode)}${paths}</svg>`;
+  return {html:lanes+svg+lbls+CFG.nodes.map(n=>nodeHTML(n,mode,cnt[n.id])).join(''),W,H};
+}
+function edgeLegend(){
+  const ln=j=>`<svg viewBox="0 0 28 8"><line x1="0" y1="4" x2="28" y2="4" class="ep ${j}"/></svg>`;
+  return `<span>${ln('lulus')}Lulus / teruskan</span><span>${ln('tolak')}Tolak</span><span>${ln('kembali')}Kembalikan</span>`;
+}
 
 /* =================== DASHBOARD =================== */
 const F={step:'',q:'',jab:'',kat:'',sla:''};
 function stepMatch(it){
   if(!F.step) return true;
-  if(F.step==='SELESAI'||F.step==='DITOLAK') return it.status===F.step;
+  const n=N(F.step); if(!n) return true;
+  if(n.jenis==='tamat'){const t=tamatOf(it);return !!t&&t.id===n.id;}
   if(it.status!=='AKTIF') return false;
-  const {e}=ctx(it); if(!e) return false;
-  const [sid,sub]=F.step.split(':'); return e.stepId===sid&&(sub===undefined||e.sub===+sub);
+  const {node}=ctx(it); return !!node&&node.id===n.id;
 }
 function filtered(){
   return DATA.filter(it=>{
@@ -490,9 +648,7 @@ function filtered(){
     return true;
   });
 }
-function renderDash(){
-  fillFilters(); renderKPI(); renderFlow(); renderBars(); renderMatrixView(); renderList();
-}
+function renderDash(){ fillFilters(); renderKPI(); renderFlow(); renderBars(); renderMatrixView(); renderList(); }
 function fillFilters(){
   const keep=(sel,first,opts,val)=>{sel.innerHTML=`<option value="">${first}</option>`+opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('');};
   keep($('fJab'),'Semua jabatan',CFG.depts.map(d=>d.nama),F.jab);
@@ -501,7 +657,7 @@ function fillFilters(){
 function renderKPI(){
   const aktif=DATA.filter(d=>d.status==='AKTIF'),pipe=DATA.filter(inApproval),lulus=DATA.filter(isApproved);
   const totB=CFG.depts.reduce((a,d)=>a+(+d.bajet||0),0),lulusRM=lulus.reduce((a,b)=>a+b.nilai,0);
-  const cyc=lulus.map(it=>{const m=it.sejarah.filter(h=>{const s=S(h.stepId);return s&&s.jenis==='matriks'&&h.tindakan!=='Ditolak';}).pop();return m&&it.sejarah[0]?Math.round((parse(m.tarikh)-parse(it.sejarah[0].tarikh))/DAY):null;}).filter(x=>x!=null);
+  const cyc=lulus.map(it=>{const m=it.sejarah.filter(h=>{const n=N(h.stepId);return n&&n.jenis==='matriks'&&isLulusTx(h);}).pop();return m&&it.sejarah[0]?Math.round((parse(m.tarikh)-parse(it.sejarah[0].tarikh))/DAY):null;}).filter(x=>x!=null);
   const avg=cyc.length?Math.round(cyc.reduce((a,b)=>a+b,0)/cyc.length):0;
   const late=DATA.filter(it=>slaOf(it)==='c').length, pct=totB?Math.round(lulusRM/totB*100):0;
   $('kpis').innerHTML=`
@@ -513,40 +669,30 @@ function renderKPI(){
   $('kLate').onclick=e=>{e.preventDefault();F.sla='c';$('fSla').value='c';F.step='';renderDash();document.querySelector('.list').scrollIntoView({behavior:'smooth'});};
 }
 function renderFlow(){
-  const act=DATA.filter(d=>d.status==='AKTIF').map(it=>({it,...ctx(it)}));
-  const box=s=>{
-    const items=act.filter(a=>a.e&&a.e.stepId===s.id);
-    const late=items.filter(a=>slaOf(a.it)==='c').length;
-    const extra=s.jenis==='matriks'?CFG.matrix.map((m,i)=>{const u=U(m.userId);const n=items.filter(a=>a.e.sub===i).length;return `<div class="ml"><span>${esc(u?u.jawatan||u.nama:'—')}</span><b class="num">${n}</b></div>`;}).join(''):'';
-    return `<button class="step ${F.step===s.id?'on':''}" data-k="${s.id}"><div class="nm">${esc(s.nama)}</div><div class="who">${esc(assigneeLabel(s))}${s.sla?` · SLA ${s.sla} hari`:''}</div>
-      <div class="row"><span class="ct num">${items.length}</span><span class="rm num">${fmtRM(items.reduce((a,b)=>a+b.it.nilai,0))}</span>${late?`<span class="late">⚠ ${late} lewat</span>`:''}</div>${extra}</button>`;
-  };
-  if(!CFG.phases.length){$('flow').style.gridTemplateColumns='1fr';$('flow').innerHTML='<div class="empty">Belum ada workflow. Buka tab <b>Reka workflow</b> untuk tambah fasa dan langkah, atau Import JSON.</div>';$('terms').innerHTML='';return;}
-  $('flow').style.gridTemplateColumns=`repeat(${CFG.phases.length},minmax(0,1fr))`;
-  $('flow').innerHTML=CFG.phases.map(p=>{const st=CFG.steps.filter(s=>s.phaseId===p.id);
-    return `<div class="lane" style="--pc:${phaseColor(p)}"><div class="lh"><span class="t">${esc(p.nama)}</span></div><div class="lb">${st.length?st.map(box).join('<div class="ar">▼</div>'):'<div class="empty">Tiada langkah</div>'}</div></div>`;}).join('');
-  const done=DATA.filter(d=>d.status==='SELESAI'),rej=DATA.filter(d=>d.status==='DITOLAK');
+  const wrap=$('flow');
+  if(CFG.nodes.length<=1){wrap.innerHTML='<div class="empty">Belum ada workflow. Buka tab <b>Reka workflow</b> untuk melukis langkah dan garisan, atau Import JSON.</div>';$('flowfoot').innerHTML='';return;}
+  const {html,W,H}=worldHTML('view');
+  const avail=Math.max(300,wrap.clientWidth||900), k=Math.max(0.55,Math.min(1,avail/W));
+  wrap.innerHTML=`<div class="vsz view" style="width:${W*k}px;height:${H*k}px"><div class="world" style="width:${W}px;height:${H}px;transform:scale(${k})">${html}</div></div>`;
+  wrap.querySelectorAll('.nd').forEach(d=>d.onclick=()=>{const n=N(d.dataset.n);if(!n||n.jenis==='mula')return;F.step=F.step===n.id?'':n.id;renderDash();});
   let worst=null;
-  CFG.steps.filter(s=>s.sla).forEach(s=>{const its=act.filter(a=>a.e&&a.e.stepId===s.id);if(!its.length)return;const avg=its.reduce((x,a)=>x+hariDi(a.it),0)/its.length;if(!worst||avg/s.sla>worst.r)worst={s,r:avg/s.sla,avg:Math.round(avg)};});
-  $('terms').innerHTML=`<button class="term ok ${F.step==='SELESAI'?'on':''}" data-k="SELESAI">✓ Ditutup <b class="num">${done.length}</b> · ${fmtRM(done.reduce((a,b)=>a+b.nilai,0))}</button>
-    <button class="term no ${F.step==='DITOLAK'?'on':''}" data-k="DITOLAK">✕ Ditolak <b class="num">${rej.length}</b> · ${fmtRM(rej.reduce((a,b)=>a+b.nilai,0))}</button>
-    ${worst&&worst.r>1?`<span>Kesesakan utama: <b>${esc(worst.s.nama)}</b> — purata ${worst.avg} hari berbanding SLA ${worst.s.sla} hari</span>`:''}`;
-  document.querySelectorAll('#flow .step,#terms .term').forEach(b=>b.onclick=()=>{F.step=F.step===b.dataset.k?'':b.dataset.k;renderDash();});
+  CFG.nodes.filter(n=>n.sla).forEach(n=>{const its=DATA.filter(it=>it.status==='AKTIF'&&(ctx(it).node||{}).id===n.id);if(!its.length)return;const avg=its.reduce((x,it)=>x+hariDi(it),0)/its.length;if(!worst||avg/n.sla>worst.r)worst={n,r:avg/n.sla,avg:Math.round(avg)};});
+  $('flowfoot').innerHTML=edgeLegend()+(worst&&worst.r>1?`<span>Kesesakan utama: <b>${esc(worst.n.nama)}</b> — purata ${worst.avg} hari berbanding SLA ${worst.n.sla} hari</span>`:'');
 }
 function renderBars(){
   const rows=CFG.depts.filter(d=>+d.bajet>0).map(d=>{const its=DATA.filter(it=>it.jabatan===d.nama);return {j:d.nama,a:its.filter(isApproved).reduce((s,b)=>s+b.nilai,0),p:its.filter(inApproval).reduce((s,b)=>s+b.nilai,0),b:+d.bajet};});
-  if(!rows.length){$('bars').innerHTML='<div class="empty">Tiada jabatan dengan bajet.</div>';return;}
+  if(!rows.length){$('bars').innerHTML='<div class="empty">Tiada jabatan dengan bajet. Tetapkan bajet di tab Pengguna & jabatan.</div>';return;}
   const max=Math.max(...rows.map(r=>Math.max(r.b,r.a+r.p)))*1.04,W=v=>v/max*100;
-  $('bars').innerHTML=rows.map(r=>{const pct=Math.round((r.a+r.p)/r.b*100);
+  $('bars').innerHTML=rows.map((r,i)=>{const pct=Math.round((r.a+r.p)/r.b*100);
     return `<div class="brow"><div class="nm">${esc(r.j)}</div><div class="track"><div class="base"></div>
-      ${r.a?`<div class="seg a ${r.p?'':'end'}" style="left:0;width:${W(r.a)}%" data-t="Diluluskan|${r.a}|${esc(r.j)}"></div>`:''}
-      ${r.p?`<div class="seg b" style="left:calc(${W(r.a)}% + ${r.a?2:0}px);width:calc(${W(r.p)}% - ${r.a?2:0}px)" data-t="Dalam kelulusan|${r.p}|${esc(r.j)}"></div>`:''}
-      <div class="bud" style="left:calc(${W(r.b)}% - 1px)" data-t="Bajet|${r.b}|${esc(r.j)}"></div></div>
+      ${r.a?`<div class="seg a ${r.p?'':'end'}" style="left:0;width:${W(r.a)}%" data-t="Diluluskan|${r.a}|${i}"></div>`:''}
+      ${r.p?`<div class="seg b" style="left:calc(${W(r.a)}% + ${r.a?2:0}px);width:calc(${W(r.p)}% - ${r.a?2:0}px)" data-t="Dalam kelulusan|${r.p}|${i}"></div>`:''}
+      <div class="bud" style="left:calc(${W(r.b)}% - 1px)" data-t="Bajet|${r.b}|${i}"></div></div>
       <div class="info num">${fmtRM(r.a)} lulus + ${fmtRM(r.p)} dalam proses / bajet ${fmtRM(r.b)} · <span class="${pct>100?'over':''}">${pct>100?'⚠ ':''}${pct}%</span></div></div>`;}).join('');
   const tip=$('tip');
   document.querySelectorAll('#bars [data-t]').forEach(el=>{
-    el.onmousemove=e=>{const [n,v,j]=el.dataset.t.split('|');const r=rows.find(x=>x.j===j);
-      tip.innerHTML=`<b>${j}</b><br>${n}: RM ${fmtFull(+v)}<br><span style="color:var(--text-2)">Baki bajet: RM ${fmtFull(r.b-r.a-r.p)}</span>`;
+    el.onmousemove=e=>{const [n,v,i]=el.dataset.t.split('|');const r=rows[+i];
+      tip.innerHTML=`<b>${esc(r.j)}</b><br>${n}: RM ${fmtFull(+v)}<br><span style="color:var(--text-2)">Baki bajet: RM ${fmtFull(r.b-r.a-r.p)}</span>`;
       tip.style.display='block';tip.style.left=Math.min(e.clientX+12,innerWidth-270)+'px';tip.style.top=(e.clientY+12)+'px';};
     el.onmouseleave=()=>tip.style.display='none';
   });
@@ -557,9 +703,9 @@ function renderMatrixView(){
 function stepPill(it){
   if(it.status==='DITOLAK') return '<span class="pill rej">✕ Ditolak</span>';
   if(it.status==='SELESAI') return '<span class="pill done">✓ Ditutup</span>';
-  const {e,pos}=ctx(it); if(!e) return '—';
-  const p=P(e.step.phaseId);
-  return `<span class="pill" style="--pc:${phaseColor(p)}"><i></i>${pos===0&&it.dikembalikan?'↩ ':''}${esc(e.step.nama)}</span>`;
+  if(it.status==='DIGANTUNG') return '<span class="pill hold">⏸ Digantung</span>';
+  const {node}=ctx(it); if(!node) return '<span class="pill">—</span>';
+  return `<span class="pill" style="--pc:${phaseColor(phaseOfNode(node))}"><i></i>${it.dikembalikan?'↩ ':''}${esc(node.nama)}</span>`;
 }
 function nextCell(it){
   if(it.status!=='AKTIF') return '—';
@@ -574,13 +720,11 @@ function slaCell(it){
 }
 function renderList(){
   const list=filtered().sort((a,b)=>(slaOf(b)==='c')-(slaOf(a)==='c')||b.nilai-a.nilai);
-  const parts=[];
-  if(F.step) parts.push(F.step==='SELESAI'?'Ditutup':F.step==='DITOLAK'?'Ditolak':(S(F.step)||{}).nama||'');
-  if(F.sla) parts.push(F.sla==='c'?'Lewat SLA':'Hampir SLA');
+  const parts=[]; if(F.step&&N(F.step)) parts.push(N(F.step).nama); if(F.sla) parts.push(F.sla==='c'?'Lewat SLA':'Hampir SLA');
   $('listTitle').innerHTML=`Senarai permohonan <span class="hint">${list.length} rekod${parts.length?' · '+esc(parts.join(' · ')):''}</span>`;
-  $('rows').innerHTML=list.length?list.map(it=>`<tr tabindex="0" data-id="${it.id}">
-    <td class="num">${it.id}</td><td>${esc(it.tajuk)}</td><td>${esc(it.jabatan)}</td><td class="r num">${fmtFull(it.nilai)}</td>
-    <td>${stepPill(it)}</td><td>${nextCell(it)}</td><td>${slaCell(it)}</td><td class="pri-${it.keutamaan[0]}">${it.keutamaan}</td></tr>`).join('')
+  $('rows').innerHTML=list.length?list.map(it=>`<tr tabindex="0" data-id="${esc(it.id)}">
+    <td class="num">${esc(it.id)}</td><td>${esc(it.tajuk)}</td><td>${esc(it.jabatan)}</td><td class="r num">${fmtFull(it.nilai)}</td>
+    <td>${stepPill(it)}</td><td>${nextCell(it)}</td><td>${slaCell(it)}</td><td class="pri-${esc((it.keutamaan||'S')[0])}">${esc(it.keutamaan)}</td></tr>`).join('')
     :'<tr><td colspan="8" class="empty">Tiada permohonan sepadan dengan penapis.</td></tr>';
   document.querySelectorAll('#rows tr[data-id]').forEach(tr=>{tr.onclick=()=>openDrawer(tr.dataset.id);tr.onkeydown=e=>{if(e.key==='Enter')openDrawer(tr.dataset.id);};});
 }
@@ -592,77 +736,81 @@ $('btnReset').onclick=()=>{Object.keys(F).forEach(k=>F[k]='');$('q').value='';$(
 
 /* ----- Drawer butiran + tindakan ----- */
 let cur=null;
+function routeLi(cls,ic,n,title,sub,d){const p=n?phaseOfNode(n):null;return `<li class="${cls}"><span class="ic">${ic}</span><span class="t"><span class="ph" style="--pc:${phaseColor(p)}">${esc(p?p.nama:'')}</span>${esc(title)}<small>${sub}</small></span><span class="d num">${d}</span></li>`;}
 function openDrawer(id){
-  cur=DATA.find(d=>d.id===id); const it=cur, {r,pos,e}=ctx(it);
+  cur=DATA.find(d=>d.id===id); const it=cur; if(!it) return;
+  const {node,sub,e}=ctx(it);
   $('dId').textContent=it.id+' · '+it.jabatan; $('dTitle').textContent=it.tajuk;
-  const lastFor=(x)=>it.sejarah.filter(h=>h.stepId===x.stepId&&h.sub===x.sub).pop();
-  const route=r.map((x,j)=>{
-    let cls='',ic=j+1,d='',note='';
-    if(j<pos){cls='done';ic='✓';const h=lastFor(x);if(h){d=fmtDate(h.tarikh);if(h.ulasan)note=' — “'+esc(h.ulasan)+'”';}}
-    else if(j===pos&&it.status==='DITOLAK'){cls='rej';ic='✕';const h=lastFor(x);if(h){d=fmtDate(h.tarikh);note=' — “'+esc(h.ulasan)+'”';}}
-    else if(j===pos&&it.status==='AKTIF'){cls='cur';d=`${hariDi(it)} hari`;}
-    const p=P(x.step.phaseId);
-    return `<li class="${cls}"><span class="ic">${ic}</span><span class="t"><span class="ph" style="--pc:${phaseColor(p)}">${esc(p?p.nama:'')}</span>${esc(x.step.nama)}<small>${esc(x.nama)}${x.jawatan?' ('+esc(x.jawatan)+')':''}${x.jab?' · '+esc(x.jab):''}${note}</small></span><span class="d num">${d}</span></li>`;
-  }).join('');
-  const pem=U(it.pemohonId), fin=r.filter(x=>x.step.jenis==='matriks').pop();
+  let html=it.sejarah.map(h=>{const n=N(h.stepId);const rej=/Ditolak/.test(h.tindakan),ret=/Dikembalikan/.test(h.tindakan);
+    return routeLi(rej?'rej':ret?'ret':'done',rej?'✕':ret?'↩':'✓',n,h.langkah,`${esc(h.oleh)}${h.jab?' · '+esc(h.jab):''} — ${esc(h.tindakan)}${h.ulasan?' — “'+esc(h.ulasan)+'”':''}`,fmtDate(h.tarikh));}).join('');
+  if(it.status==='AKTIF'&&node){
+    project(it,node,sub).forEach((x,i)=>{
+      if(x.step.jenis==='tamat'){html+=routeLi('pend','■',x.step,x.step.nama,'Dijangka — tamat','');return;}
+      html+=routeLi(i===0?'cur':'pend',i===0?'●':'',x.step,x.step.nama,`${esc(x.nama)}${x.jawatan?' ('+esc(x.jawatan)+')':''}${x.jab?' · '+esc(x.jab):''}${i?' — dijangka':''}`,i===0?`${hariDi(it)} hari`:'');
+    });
+  } else { const t=tamatOf(it); if(t) html+=routeLi(it.status==='SELESAI'?'done':'rej',it.status==='SELESAI'?'✓':it.status==='DIGANTUNG'?'⏸':'✕',t,t.nama,'Tamat',''); }
+  const pem=U(it.pemohonId), f0=firstNode(it.nilai), fin=f0?project(it,f0,0).filter(x=>x.step.jenis==='matriks').pop():null;
   $('dBody').innerHTML=`
     <div class="kv">
       <div>Anggaran kos<b class="num">RM ${fmtFull(it.nilai)}</b></div>
       <div>Langkah semasa<b>${stepPill(it)}</b></div>
       <div>Kategori<b>${esc(it.kategori)}</b></div>
-      <div>Keutamaan<b>${it.keutamaan}</b></div>
+      <div>Keutamaan<b>${esc(it.keutamaan)}</b></div>
       <div>Pemohon<b>${esc(pem?pem.nama:'—')}</b></div>
       <div>Tarikh mohon<b class="num">${fmtDate(it.tarikhMohon)}</b></div>
-      <div>Tempoh pulangan<b class="num">${it.payback?it.payback+' tahun':'— (pematuhan / penggantian)'}</b></div>
+      <div>Tempoh pulangan<b class="num">${it.payback?esc(it.payback)+' tahun':'— (pematuhan / penggantian)'}</b></div>
       <div>Pelulus akhir<b>${esc(fin?fin.jawatan||fin.nama:'—')}</b></div>
       ${it.sebenar?`<div>Kos sebenar<b class="num">RM ${fmtFull(it.sebenar)} (${Math.round(it.sebenar/it.nilai*100)}%)</b></div>`:''}
     </div>
     <div class="sect">Justifikasi</div><div style="font-size:13px;white-space:pre-line">${esc(it.justifikasi)}</div>
-    <div class="sect">Laluan workflow & sejarah</div><ol class="route">${route}</ol>`;
+    <div class="sect">Sejarah & laluan dijangka</div><ol class="route">${html}</ol>`;
   const foot=$('dFoot');
-  if(it.status!=='AKTIF'){foot.innerHTML=`<span style="color:var(--text-2);font-size:13px">${it.status==='SELESAI'?'Projek ditutup dan dipermodalkan.':'Permohonan ditolak.'}</span><span style="flex:1"></span><button class="btn" id="aClose">Tutup</button>`;$('aClose').onclick=closeAll;}
-  else{
-    const isDecision=pos>0&&pos<=approvalEnd(r);
-    const okLbl=pos===0?'Hantar':isDecision?'Lulus / sokong':'Selesai langkah';
+  if(it.status!=='AKTIF'||!node){
+    foot.innerHTML=`<span style="color:var(--text-2);font-size:13px">${it.status==='SELESAI'?'Projek ditutup.':it.status==='DITOLAK'?'Permohonan ditolak.':it.status==='DIGANTUNG'?'Projek digantung.':'Workflow belum disambung dari Mula.'}</span><span style="flex:1"></span><button class="btn" id="aClose">Tutup</button>`;
+    $('aClose').onclick=closeAll;
+  } else {
+    const a=actionsFor(it), f=firstNode(it.nilai), isFirst=f&&node.id===f.id;
+    const nx=a.lulus&&!a.internal?N(a.lulus.to):null;
+    const okLbl=isFirst?'Hantar':nx&&nx.jenis==='tamat'?'Selesai':'Lulus / sokong';
     foot.innerHTML=`<textarea id="aNote" placeholder="Ulasan (wajib untuk tolak / kembalikan)"></textarea>
       <span style="font-size:12px;color:var(--text-2)">Sebagai: <b>${esc(e.nama)}</b>${e.jab?' · '+esc(e.jab):''}</span><span style="flex:1"></span>
-      ${isDecision?'<button class="btn danger" id="aRej">Tolak</button><button class="btn" id="aRet">Kembalikan</button>':''}
-      <button class="btn primary" id="aOk">${okLbl}</button>`;
-    $('aOk').onclick=()=>act('ok'); if($('aRej')){$('aRej').onclick=()=>act('rej');$('aRet').onclick=()=>act('ret');}
+      ${a.tolak?'<button class="btn danger" id="aRej">Tolak</button>':''}${a.kembali?'<button class="btn warn" id="aRet">Kembalikan</button>':''}
+      ${a.lulus?`<button class="btn primary" id="aOk">${okLbl}</button>`:'<span style="font-size:12px;color:var(--warn-text)">⚠ Tiada garisan Lulus dari langkah ini — lukis di Reka workflow.</span>'}`;
+    if($('aOk'))$('aOk').onclick=()=>act('ok'); if($('aRej'))$('aRej').onclick=()=>act('rej'); if($('aRet'))$('aRet').onclick=()=>act('ret');
   }
   $('scrim').classList.add('show');$('drawer').classList.add('show');$('dClose').focus();
 }
 function act(kind){
-  const it=cur,note=$('aNote').value.trim(),{r,pos,e}=ctx(it);
+  const it=cur,note=$('aNote').value.trim(),{node,e}=ctx(it),a=actionsFor(it);
   if(kind!=='ok'&&!note){$('aNote').focus();toast('Sila isi ulasan.');return;}
-  const h={stepId:e.stepId,sub:e.sub,langkah:e.step.nama,oleh:e.nama,jab:e.jab,tarikh:iso(TODAY),ulasan:note};
+  const f=firstNode(it.nilai), h={stepId:e.stepId,sub:e.sub,langkah:node.nama,oleh:e.nama,jab:e.jab,tarikh:iso(TODAY),ulasan:note};
   if(kind==='ok'){
-    it.sejarah.push({...h,tindakan:pos===0?'Dihantar':'Disokong / lulus'}); it.dikembalikan=false;
-    if(pos+1>=r.length){it.status='SELESAI';it.cur=null;} else it.cur={stepId:r[pos+1].stepId,sub:r[pos+1].sub};
-    toast(`${it.id}: ${e.step.nama} — selesai`);
-  } else if(kind==='rej'){ it.sejarah.push({...h,tindakan:'Ditolak'}); it.status='DITOLAK'; toast(`${it.id} ditolak`); }
-  else { it.sejarah.push({...h,tindakan:'Dikembalikan'}); it.cur={stepId:r[0].stepId,sub:r[0].sub}; it.dikembalikan=true; it.justifikasi+=`\n[Dikembalikan oleh ${e.nama}: ${note}]`; toast(`${it.id} dikembalikan kepada pemohon`); }
+    it.sejarah.push({...h,tindakan:f&&node.id===f.id?'Dihantar':'Disokong / lulus'}); it.dikembalikan=false;
+    if(a.internal) it.cur={stepId:node.id,sub:e.sub+1}; else goEdge(it,a.lulus);
+    toast(`${it.id}: ${node.nama} — selesai`);
+  } else if(kind==='rej'){ it.sejarah.push({...h,tindakan:'Ditolak'}); goEdge(it,a.tolak); toast(`${it.id} ditolak`); }
+  else { it.sejarah.push({...h,tindakan:'Dikembalikan'}); goEdge(it,a.kembali); it.dikembalikan=true; toast(`${it.id} dikembalikan`); }
   it.masuk=iso(TODAY); saveReq(it); renderDash(); openDrawer(it.id);
 }
-function closeAll(){['scrim','drawer','dlg'].forEach(i=>$(i).classList.remove('show'));$('tip').style.display='none';if(pendingRender){pendingRender=false;render();}}
+function closeAll(){['scrim','drawer','dlg'].forEach(i=>$(i).classList.remove('show'));$('tip').style.display='none';setTimeout(flushRender,0);}
 ['dClose','dlgClose','scrim'].forEach(i=>$(i).onclick=closeAll);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
 
-/* ----- Dialog generik ----- */
+/* ----- Dialog generik (tanpa form submit: pratonton sandbox menyekatnya) ----- */
 function dialog(title,html,onSubmit,{onDelete,saveLabel='Simpan'}={}){
   $('dlgTitle').textContent=title;
   const f=$('dlgForm');
   f.innerHTML=html+`<div class="acts">${onDelete?'<button type="button" class="btn danger" id="dlgDel" style="margin-right:auto">Padam</button>':''}<button type="button" class="btn" id="dlgCancel">Batal</button><button type="button" class="btn primary" id="dlgOk">${saveLabel}</button></div>`;
-  /* Tiada form submit: pratonton sandbox tanpa allow-forms menyekat submit */
   const go=()=>{if(!f.reportValidity())return;if(onSubmit(Object.fromEntries(new FormData(f)))!==false)closeAll();};
   f.onsubmit=e=>{e.preventDefault();go();};
-  $('dlgOk').onclick=go;
+  $('dlgOk').onclick=go; $('dlgCancel').onclick=closeAll;
   f.querySelectorAll('input').forEach(i=>i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go();}});
-  $('dlgCancel').onclick=closeAll; if(onDelete) $('dlgDel').onclick=()=>{if(onDelete()!==false)closeAll();};
+  if(onDelete) $('dlgDel').onclick=()=>{if(onDelete()!==false)closeAll();};
   $('scrim').classList.add('show');$('dlg').classList.add('show');
-  const first=f.querySelector('input,select,textarea'); if(first) first.focus();
+  const first=f.querySelector('input:not([type=radio]),select,textarea'); if(first) first.focus();
   return f;
 }
+function ask(msg,onYes,label='Ya'){dialog('Pengesahan',`<p class="full" style="margin:0;font-size:14px;color:var(--text)">${esc(msg)}</p>`,()=>{onYes();},{saveLabel:label});}
 const opt=(v,l,sel)=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`;
 function userOptions(sel,dynamic=true){
   let h=dynamic?opt('@pemohon','(Pemohon)',sel)+opt('@ketua','(Ketua jabatan pemohon)',sel):'';
@@ -674,138 +822,218 @@ const deptOptions=(sel,first)=>(first!=null?opt('',first,sel):'')+CFG.depts.map(
 
 /* ----- Permohonan baru ----- */
 $('btnNew').onclick=()=>{
-  if(!CFG.users.length||CFG.steps.length<2){toast('Sediakan workflow dan pengguna dahulu.');return;}
-  const f=dialog('Permohonan CAPEX baru',`
-    <label class="full">Tajuk projek<input name="tajuk" required></label>
-    <label>Pemohon<select name="pemohonId" id="nPem">${userOptions(CFG.users[0]&&CFG.users[0].id,false)}</select></label>
-    <label>Jabatan<select name="jabatan" id="nJab">${deptOptions(CFG.users[0]&&CFG.users[0].jabatan)}</select></label>
-    <label>Kategori<select name="kategori">${KATEGORI.map(k=>opt(k,k)).join('')}</select></label>
+  if(!CFG.users.length){toast('Tambah pengguna dahulu di tab Pengguna & jabatan.');return;}
+  if(!outs('mula','lulus').length&&!(startNode()&&outs(startNode().id,'lulus').length)){toast('Lukis workflow dahulu: sambungkan Mula ke langkah pertama.');return;}
+  dialog('Permohonan CAPEX baru',`
+    <label class="full">Tajuk projek<input name="tajuk" id="nTajuk" required></label>
+    <label>Pemohon<select name="pemohonId" id="nPem">${userOptions(CFG.users[0].id,false)}</select></label>
+    <label>Jabatan<select name="jabatan" id="nJab">${deptOptions(CFG.users[0].jabatan)}</select></label>
+    <label>Kategori<select name="kategori" id="nKat">${KATEGORI.map(k=>opt(k,k)).join('')}</select></label>
     <label>Anggaran kos (RM)<input name="nilai" type="number" min="1000" step="1000" required id="nNilai"></label>
-    <label>Tempoh pulangan (tahun)<input name="payback" type="number" min="0" step="0.1"></label>
-    <label>Keutamaan<select name="keutamaan"><option>Tinggi</option><option selected>Sederhana</option><option>Rendah</option></select></label>
-    <label class="full">Justifikasi<textarea name="justifikasi" rows="3"></textarea></label>
+    <label>Tempoh pulangan (tahun)<input name="payback" id="nPay" type="number" min="0" step="0.1"></label>
+    <label>Keutamaan<select name="keutamaan" id="nPri"><option>Tinggi</option><option selected>Sederhana</option><option>Rendah</option></select></label>
+    <label class="full">Justifikasi<textarea name="justifikasi" id="nJus" rows="3"></textarea></label>
     <div class="preview" id="nRoute"></div>`,
     v=>{
-      const nilai=+v.nilai, n=Math.max(0,...DATA.map(d=>+d.id.split('-').pop()))+1, id=`CPX-${YEAR}-${String(n).padStart(3,'0')}`;
-      const it={id,tajuk:v.tajuk,jabatan:v.jabatan,kategori:v.kategori,nilai,keutamaan:v.keutamaan,payback:v.payback?+v.payback:null,pemohonId:v.pemohonId,sebenar:null,justifikasi:v.justifikasi||'—',status:'AKTIF',sejarah:[],masuk:iso(TODAY),tarikhMohon:iso(TODAY)};
-      const r=routeOf(it); if(r.length<2){toast('Workflow perlu sekurang-kurangnya 2 langkah.');return false;}
-      it.sejarah.push({stepId:r[0].stepId,sub:r[0].sub,langkah:r[0].step.nama,oleh:r[0].nama,jab:r[0].jab,tarikh:iso(TODAY),tindakan:'Dihantar',ulasan:''});
-      it.cur={stepId:r[1].stepId,sub:r[1].sub}; DATA.push(it); saveReq(it);
-      F.step=''; renderDash(); toast(`${id} dihantar kepada ${r[1].nama}`);
+      const nilai=+v.nilai, f=firstNode(nilai);
+      if(!f){toast('Sambungkan Mula ke langkah pertama di Reka workflow.');return false;}
+      const n=Math.max(0,...DATA.map(d=>+String(d.id).split('-').pop()||0))+1, id=`CPX-${YEAR}-${String(n).padStart(3,'0')}`;
+      const it={id,tajuk:v.tajuk,jabatan:v.jabatan,kategori:v.kategori,nilai,keutamaan:v.keutamaan,payback:v.payback?+v.payback:null,pemohonId:v.pemohonId,sebenar:null,justifikasi:v.justifikasi||'—',status:'AKTIF',sejarah:[],masuk:iso(TODAY),tarikhMohon:iso(TODAY),cur:{stepId:f.id,sub:0}};
+      const e0=entry(f,0,it); it.sejarah.push({stepId:f.id,sub:0,langkah:f.nama,oleh:e0.nama,jab:e0.jab,tarikh:iso(TODAY),tindakan:'Dihantar',ulasan:''});
+      const nx=pick(f.id,'lulus',nilai); if(nx) goEdge(it,nx);
+      DATA.push(it); saveReq(it); F.step=''; renderDash();
+      const c=ctx(it); toast(`${id} dihantar${c.e?' kepada '+c.e.nama:''}`);
     },{saveLabel:'Hantar permohonan'});
-  const prev=()=>{const it={nilai:+$('nNilai').value||0,jabatan:$('nJab').value,pemohonId:$('nPem').value};
-    $('nRoute').innerHTML=`<b>Laluan workflow${it.nilai?'':' (masukkan kos untuk tahap matriks)'}:</b><ol>${routeOf(it).map(x=>`<li>${esc(x.step.nama)} — ${esc(x.nama)}${x.jawatan&&x.step.jenis==='matriks'?' ('+esc(x.jawatan)+')':''}</li>`).join('')}</ol>`;};
+  const prev=()=>{const it={nilai:+$('nNilai').value||0,jabatan:$('nJab').value,pemohonId:$('nPem').value};const f=firstNode(it.nilai);
+    $('nRoute').innerHTML=f?`<b>Laluan dijangka${it.nilai?'':' (masukkan kos untuk tahap matriks)'}:</b><ol>${project(it,f,0).map(x=>`<li>${esc(x.step.nama)}${x.step.jenis==='tamat'?'':' — '+esc(x.nama)+(x.step.jenis==='matriks'&&x.jawatan?' ('+esc(x.jawatan)+')':'')}</li>`).join('')}</ol>`:'⚠ Workflow belum disambung dari Mula.';};
   $('nPem').onchange=()=>{const u=U($('nPem').value);if(u&&D(u.jabatan))$('nJab').value=u.jabatan;prev();};
   $('nJab').onchange=prev; $('nNilai').oninput=prev; prev();
 };
 
-/* =================== EDITOR WORKFLOW =================== */
-function activeAt(stepId){return DATA.filter(it=>it.status==='AKTIF'&&it.cur&&it.cur.stepId===stepId).length;}
-function renderBoard(){
-  const ph=CFG.phases;
-  $('board').innerHTML=ph.map((p,pi)=>{
-    const st=CFG.steps.filter(s=>s.phaseId===p.id);
-    return `<div class="lane" style="--pc:${phaseColor(p)}">
-      <div class="lh"><button class="ib" data-mv="${p.id}|-1" ${pi===0?'disabled':''} aria-label="Alih fasa ke kiri">◀</button><span class="t">${esc(p.nama)}</span><button class="ib" data-ed="${p.id}" aria-label="Ubah fasa">✎</button><button class="ib" data-mv="${p.id}|1" ${pi===ph.length-1?'disabled':''} aria-label="Alih fasa ke kanan">▶</button></div>
-      <div class="cards" data-p="${p.id}">${st.map(s=>{
-        const n=activeAt(s.id);
-        const who=s.jenis==='matriks'
-          ? CFG.matrix.map((m,i)=>{const u=U(m.userId);return `<div class="ml"><span>${hadLabel(i)}</span><b>${esc(u?u.nama:'—')}</b></div>`;}).join('')
-          : `<div class="u">👤 ${esc(s.userId==='@pemohon'?'(Pemohon)':s.userId==='@ketua'?'(Ketua jabatan pemohon)':(U(s.userId)||{nama:'(Belum ditetapkan)'}).nama)}${U(s.userId)?` <small>${esc(U(s.userId).jawatan)}</small>`:''}</div>`;
-        const dept=s.jenis==='matriks'?'<span class="chip mxc">Matriks had</span>':`<span class="chip">🏢 ${esc(s.jabatan||(U(s.userId)||{}).jabatan||(s.userId.startsWith('@')?'Jabatan pemohon':'—'))}</span>`;
-        return `<div class="wcard" draggable="true" tabindex="0" data-id="${s.id}"><div class="nm">${esc(s.nama)}</div>${who}${dept}${s.sla?`<span class="chip">⏱ SLA ${s.sla} hari</span>`:''}${n?`<span class="chip">${n} aktif</span>`:''}</div>`;
-      }).join('')}</div>
-      <div style="padding:0 10px 10px"><button class="addstep" data-add="${p.id}">+ Tambah langkah</button></div>
-    </div>`;
-  }).join('')+`<button class="addphase" id="wfAddPhase2">+ Tambah fasa</button>`;
-  const B=$('board');
-  B.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const [id,d]=b.dataset.mv.split('|');const i=CFG.phases.findIndex(p=>p.id===id),j=i+ +d;[CFG.phases[i],CFG.phases[j]]=[CFG.phases[j],CFG.phases[i]];save();renderBoard();});
-  B.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>editPhase(b.dataset.ed));
-  B.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>editStep(null,b.dataset.add));
-  $('wfAddPhase2').onclick=()=>editPhase(null);
-  B.querySelectorAll('.wcard').forEach(c=>{
-    c.onclick=()=>editStep(c.dataset.id); c.onkeydown=e=>{if(e.key==='Enter')editStep(c.dataset.id);};
-    c.ondragstart=e=>{dragId=c.dataset.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragId);requestAnimationFrame(()=>c.classList.add('dragging'));};
-    c.ondragend=()=>{dragId=null;c.classList.remove('dragging');clearPh();};
-  });
-  B.querySelectorAll('.cards').forEach(z=>{
-    z.ondragover=e=>{if(!dragId)return;e.preventDefault();z.classList.add('over');placePh(z,e.clientY);};
-    z.ondragleave=e=>{if(!z.contains(e.relatedTarget)){z.classList.remove('over');}};
-    z.ondrop=e=>{e.preventDefault();if(!dragId)return;const idx=dropIndex(z,e.clientY);moveStep(dragId,z.dataset.p,idx);dragId=null;};
-  });
+/* =================== EDITOR KANVAS =================== */
+let VS=null;
+function applyView(){$('world').style.transform=`translate(${VS.tx}px,${VS.ty}px) scale(${VS.k})`;$('zoomLbl').textContent=Math.round(VS.k*100)+'%';}
+function fitView(){
+  const r=$('vp').getBoundingClientRect(),{W,H}=dims('edit');
+  if(r.width<50){VS={k:1,tx:20,ty:20};return;}
+  const k=Math.max(0.3,Math.min(1.1,(r.width-40)/W,(r.height-40)/H));
+  VS={k,tx:Math.max(20,(r.width-W*k)/2),ty:20};
 }
-let dragId=null;
-function cardsIn(z){return [...z.querySelectorAll('.wcard')].filter(c=>c.dataset.id!==dragId);}
-function dropIndex(z,y){const cs=cardsIn(z);const i=cs.findIndex(c=>{const b=c.getBoundingClientRect();return y<b.top+b.height/2;});return i<0?cs.length:i;}
-function clearPh(){document.querySelectorAll('.phold').forEach(p=>p.remove());document.querySelectorAll('.cards.over').forEach(z=>z.classList.remove('over'));}
-function placePh(z,y){
-  document.querySelectorAll('.cards').forEach(o=>{if(o!==z)o.classList.remove('over');});
-  let ph=document.querySelector('.phold'); if(!ph){ph=document.createElement('div');ph.className='phold';}
-  const cs=cardsIn(z),i=dropIndex(z,y);
-  if(i<cs.length) z.insertBefore(ph,cs[i]); else z.appendChild(ph);
+function drawWorld(){const {html,W,H}=worldHTML('edit');const w=$('world');w.innerHTML=html;w.style.width=W+'px';w.style.height=H+'px';}
+function renderCanvas(){
+  drawWorld(); if(!VS) fitView(); applyView();
+  $('elegend').innerHTML=edgeLegend()+'<span>● titik sambung (tarik)</span>';
+  $('addMx').disabled=hasMatrix();
+  renderIssues();
 }
-function moveStep(id,phaseId,idx){
-  const s=S(id); CFG.steps=CFG.steps.filter(x=>x.id!==id); s.phaseId=phaseId;
-  const list=CFG.steps.filter(x=>x.phaseId===phaseId);
-  if(idx<list.length) CFG.steps.splice(CFG.steps.indexOf(list[idx]),0,s); else CFG.steps.push(s);
-  save(); clearPh(); renderBoard(); toast(`"${s.nama}" dialih ke fasa ${P(phaseId).nama}`);
+function renderIssues(){
+  const out=[],s=startNode();
+  if(!CFG.phases.length) out.push('Tambah sekurang-kurangnya satu fasa (jalur berwarna).');
+  if(s&&!outs(s.id,'lulus').length) out.push('Sambungkan Mula ke langkah pertama — tarik ● pada bulatan Mula.');
+  CFG.nodes.forEach(n=>{
+    if(n.jenis==='tamat'||n.jenis==='mula') return;
+    const l=outs(n.id,'lulus');
+    if(!l.length) out.push(`"${n.nama}" tiada garisan Lulus keluar.`);
+    if(l.filter(e=>!hasCond(e)).length>1) out.push(`"${n.nama}" ada lebih daripada satu garisan Lulus tanpa syarat — hanya satu digunakan. Tambah syarat RM.`);
+    if(n.jenis==='langkah'&&!n.userId) out.push(`"${n.nama}" belum ada pengguna.`);
+  });
+  const seen=new Set(),q=s?[s.id]:[];
+  while(q.length){const id=q.shift();if(seen.has(id))continue;seen.add(id);outs(id).forEach(e=>q.push(e.to));}
+  CFG.nodes.forEach(n=>{if(n.jenis!=='mula'&&!seen.has(n.id))out.push(`"${n.nama}" belum disambung dari Mula.`);});
+  if(!CFG.nodes.some(n=>n.jenis==='tamat'&&n.hasil==='selesai')) out.push('Tiada titik Tamat (Selesai) — tambah dengan butang "+ Tamat".');
+  $('issues').innerHTML=out.length?out.map(t=>`<li class="bad">⚠ ${esc(t)}</li>`).join(''):'<li class="ok">✓ Workflow lengkap — setiap langkah bersambung dari Mula hingga Tamat.</li>';
+}
+const vp=$('vp');
+const toWorld=(cx,cy)=>{const r=vp.getBoundingClientRect();return {x:(cx-r.left-VS.tx)/VS.k,y:(cy-r.top-VS.ty)/VS.k};};
+function nodeAtPoint(cx,cy){const el=document.elementFromPoint(cx,cy);return el&&el.closest?el.closest('#world .nd'):null;}
+function tempLink(from,pt){
+  const svg=$('world').querySelector('svg.edges'); if(!svg) return;
+  let p=svg.querySelector('#tmpLink'); if(!p){p=document.createElementNS('http://www.w3.org/2000/svg','path');p.id='tmpLink';p.setAttribute('class','ep temp');p.setAttribute('marker-end','url(#ar-edit-temp)');svg.appendChild(p);}
+  const n=N(from),[w,h]=size(n,'edit'),x0=n.x+w,y0=n.y+h/2,d=Math.max(30,Math.abs(pt.x-x0)*0.4);
+  p.setAttribute('d',`M${x0},${y0} C${x0+d},${y0} ${pt.x-d},${pt.y} ${pt.x},${pt.y}`);
+  $('world').querySelectorAll('.nd.drop').forEach(x=>x.classList.remove('drop'));
+  const nd=nodeAtPoint(DRAG.cx,DRAG.cy);
+  if(nd&&nd.dataset.n!==from&&N(nd.dataset.n).jenis!=='mula') nd.classList.add('drop');
+}
+vp.addEventListener('pointerdown',e=>{
+  if(e.button!==0||!VS) return;
+  const t=e.target, eh=t.closest('[data-e]');
+  if(eh){editEdge(eh.dataset.e);return;}
+  const port=t.closest('.port'),nd=t.closest('.nd'),rs=t.closest('.lane-rs'),hd=t.closest('.lane-hd'),w=toWorld(e.clientX,e.clientY);
+  if(port&&nd) DRAG={type:'link',from:nd.dataset.n,cx:e.clientX,cy:e.clientY};
+  else if(rs){const p=P(rs.dataset.p),r=laneLayout().find(x=>x.p.id===p.id);DRAG={type:'resize',p,w0:r.w,last:r.w,x0:w.x,edge:r.x+r.w};}
+  else if(nd){const n=N(nd.dataset.n);DRAG={type:'node',n,dx:w.x-n.x,dy:w.y-n.y,sx:e.clientX,sy:e.clientY,moved:false};if(SEL!==n.id){SEL=n.id;$('world').querySelectorAll('.nd.sel').forEach(x=>x.classList.remove('sel'));nd.classList.add('sel');}}
+  else DRAG={type:hd?'phase':'pan',id:hd&&hd.dataset.p,sx:e.clientX,sy:e.clientY,tx:VS.tx,ty:VS.ty,moved:false};
+  try{vp.setPointerCapture(e.pointerId);}catch(_){}
+  if(DRAG.type==='pan'||DRAG.type==='phase') vp.classList.add('panning');
+  e.preventDefault();
+});
+vp.addEventListener('pointermove',e=>{
+  if(!DRAG) return; const w=toWorld(e.clientX,e.clientY);
+  if(DRAG.type==='pan'||DRAG.type==='phase'){const dx=e.clientX-DRAG.sx,dy=e.clientY-DRAG.sy;if(Math.abs(dx)+Math.abs(dy)>4)DRAG.moved=true;VS.tx=DRAG.tx+dx;VS.ty=DRAG.ty+dy;applyView();}
+  else if(DRAG.type==='node'){if(Math.abs(e.clientX-DRAG.sx)+Math.abs(e.clientY-DRAG.sy)>4)DRAG.moved=true;if(DRAG.moved){DRAG.n.x=Math.max(0,Math.round((w.x-DRAG.dx)/10)*10);DRAG.n.y=Math.max(50,Math.round((w.y-DRAG.dy)/10)*10);drawWorld();}}
+  else if(DRAG.type==='resize'){const nw=Math.max(180,Math.round((DRAG.w0+w.x-DRAG.x0)/10)*10),delta=nw-DRAG.last;if(delta){CFG.nodes.forEach(n=>{const [nw2]=size(n,'edit');if(n.x+nw2/2>=DRAG.edge)n.x+=delta;});DRAG.edge+=delta;DRAG.last=nw;DRAG.p.w=nw;drawWorld();}}
+  else if(DRAG.type==='link'){DRAG.cx=e.clientX;DRAG.cy=e.clientY;tempLink(DRAG.from,w);}
+});
+function endDrag(e){
+  if(!DRAG) return; const d=DRAG; DRAG=null; vp.classList.remove('panning');
+  if(d.type==='node'){if(d.moved){save();drawWorld();renderIssues();}else editNode(d.n.id);}
+  else if(d.type==='phase'){if(!d.moved)editPhase(d.id);}
+  else if(d.type==='resize'){save();}
+  else if(d.type==='link'){
+    const nd=nodeAtPoint(e.clientX,e.clientY);
+    drawWorld();
+    if(!nd||nd.dataset.n===d.from) toast('Lepaskan di atas kotak lain untuk sambung.');
+    else{
+      const to=N(nd.dataset.n),from=N(d.from);
+      if(to.jenis==='mula') toast('Mula tidak boleh menerima garisan.');
+      else{
+        let jenis=to.jenis==='tamat'&&to.hasil!=='selesai'?'tolak':(to.x<from.x-40?'kembali':'lulus');
+        if(from.jenis==='mula') jenis='lulus';
+        const ed={id:uid('e'),from:from.id,to:to.id,jenis,min:null,max:null};
+        CFG.edges.push(ed); save(); drawWorld(); renderIssues(); editEdge(ed.id,true);
+      }
+    }
+  }
+  setTimeout(flushRender,0);
+}
+vp.addEventListener('pointerup',endDrag);
+vp.addEventListener('pointercancel',()=>{DRAG=null;vp.classList.remove('panning');drawWorld();});
+vp.addEventListener('wheel',e=>{
+  if(!VS) return; e.preventDefault();
+  const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,k2=Math.max(0.3,Math.min(2,VS.k*Math.exp(-e.deltaY*0.0015)));
+  VS.tx=mx-(mx-VS.tx)*k2/VS.k; VS.ty=my-(my-VS.ty)*k2/VS.k; VS.k=k2; applyView();
+},{passive:false});
+function zoomBy(f){const r=vp.getBoundingClientRect(),mx=r.width/2,my=r.height/2,k2=Math.max(0.3,Math.min(2,VS.k*f));VS.tx=mx-(mx-VS.tx)*k2/VS.k;VS.ty=my-(my-VS.ty)*k2/VS.k;VS.k=k2;applyView();}
+$('zIn').onclick=()=>zoomBy(1.2); $('zOut').onclick=()=>zoomBy(1/1.2); $('zFit').onclick=()=>{fitView();applyView();};
+function centerPos(w,h){const r=vp.getBoundingClientRect(),c=toWorld(r.left+r.width/2,r.top+r.height/2);return {x:Math.max(0,Math.round((c.x-w/2)/10)*10),y:Math.max(60,Math.round((c.y-h/2)/10)*10)};}
+$('addStep').onclick=()=>editNode(null,'langkah');
+$('addMx').onclick=()=>editNode(null,'matriks');
+$('addEnd').onclick=()=>editNode(null,'tamat');
+$('addPhase').onclick=()=>editPhase(null);
+
+function activeAt(id){return DATA.filter(it=>it.status==='AKTIF'&&(ctx(it).node||{}).id===id).length;}
+function editNode(id,jenisBaru){
+  const n=id?N(id):{jenis:jenisBaru,nama:jenisBaru==='matriks'?'Kelulusan ikut matriks':jenisBaru==='tamat'?'Ditutup':'',userId:'',jabatan:'',sla:jenisBaru==='tamat'?null:5,hasil:'selesai'};
+  if(n.jenis==='mula'){toast('Ini titik Mula — tarik ● untuk sambung ke langkah pertama.');return;}
+  const del=id?()=>{const c=activeAt(id);if(c){toast(`${c} permohonan aktif berada di sini — selesaikan atau alih dahulu.`);return false;}
+    ask(`Padam "${n.nama}" dan semua garisan yang bersambung dengannya?`,()=>{CFG.nodes=CFG.nodes.filter(x=>x.id!==id);CFG.edges=CFG.edges.filter(e=>e.from!==id&&e.to!==id);SEL=null;save();render();},'Padam');return false;}:null;
+  const done=o=>{if(id)Object.assign(n,o);else{const [w,h]=size({jenis:n.jenis},'edit');const p=centerPos(w,h);const nn={id:uid('n'),jenis:n.jenis,x:p.x,y:p.y,...o};CFG.nodes.push(nn);SEL=nn.id;}save();render();};
+  if(n.jenis==='tamat'){
+    dialog(id?'Ubah titik tamat':'Titik tamat baru',`
+      <label class="full">Nama<input name="nama" id="eNama" required value="${esc(n.nama)}" maxlength="30"></label>
+      <label class="full">Hasil<select name="hasil" id="eHasil">${opt('selesai','✓ Selesai / ditutup',n.hasil)}${opt('ditolak','✕ Ditolak',n.hasil)}${opt('digantung','⏸ Digantung',n.hasil)}</select></label>`,
+      v=>done({nama:v.nama.trim(),hasil:v.hasil}),{onDelete:del});
+    return;
+  }
+  if(n.jenis==='matriks'){
+    dialog(id?'Ubah kelulusan ikut matriks':'Kelulusan ikut matriks',`
+      <label class="full">Nama<input name="nama" id="eNama" required value="${esc(n.nama)}"></label>
+      <label>SLA setiap pelulus (hari)<input name="sla" id="eSla" type="number" min="1" step="1" value="${n.sla??''}" placeholder="Kosong = tiada SLA"></label>
+      <div class="preview">Pelulus diambil daripada <b>Matriks had kelulusan</b> (tab Pengguna & jabatan) mengikut nilai permohonan, dari tahap terendah ke atas.</div>`,
+      v=>done({nama:v.nama.trim(),sla:v.sla?+v.sla:null}),{onDelete:del});
+    return;
+  }
+  dialog(id?'Ubah langkah':'Langkah baru',`
+    <label class="full">Nama langkah<input name="nama" id="eNama" required value="${esc(n.nama)}" placeholder="cth: Semakan teknikal"></label>
+    <label>Pengguna (user)<select name="userId" id="eUser" required>${opt('','— Pilih pengguna —',n.userId)}${userOptions(n.userId)}</select></label>
+    <label>Jabatan<select name="jabatan" id="eJab">${deptOptions(n.jabatan,'Ikut jabatan pengguna')}</select></label>
+    <label>SLA (hari)<input name="sla" id="eSla" type="number" min="1" step="1" value="${n.sla??''}" placeholder="Kosong = tiada SLA"></label>`,
+    v=>done({nama:v.nama.trim(),userId:v.userId,jabatan:v.jabatan,sla:v.sla?+v.sla:null}),{onDelete:del});
+}
+function editEdge(id,isNew){
+  const e=CFG.edges.find(x=>x.id===id); if(!e) return;
+  const a=N(e.from),b=N(e.to), fromMula=a&&a.jenis==='mula';
+  dialog(isNew?'Garisan baru':'Ubah garisan',`
+    <div class="preview">${esc(a?a.nama:'?')} → ${esc(b?b.nama:'?')}</div>
+    <label class="full">Jenis tindakan<select name="jenis" id="gJenis">${opt('lulus','Lulus / teruskan',e.jenis)}${fromMula?'':opt('tolak','Tolak',e.jenis)+opt('kembali','Kembalikan',e.jenis)}</select></label>
+    <label>Syarat: nilai lebih daripada (RM)<input name="min" id="gMin" type="number" min="0" step="1000" value="${e.min??''}" placeholder="Kosong = tiada"></label>
+    <label>Syarat: nilai sehingga (RM)<input name="max" id="gMax" type="number" min="0" step="1000" value="${e.max??''}" placeholder="Kosong = tiada"></label>
+    <p class="full note" style="margin:0">Jenis menentukan butang yang muncul pada langkah itu (Lulus / Tolak / Kembalikan). Syarat RM membolehkan cabang ikut nilai, cth "Lulus > RM250k → Lembaga".</p>`,
+    v=>{const mn=v.min===''?null:+v.min,mx=v.max===''?null:+v.max;if(mn!=null&&mx!=null&&mx<=mn){toast('Had "sehingga" mesti lebih besar daripada "lebih daripada".');return false;}
+      Object.assign(e,{jenis:v.jenis,min:mn,max:mx});save();render();},
+    {onDelete:()=>{CFG.edges=CFG.edges.filter(x=>x.id!==id);save();render();},saveLabel:isNew?'Simpan garisan':'Simpan'});
 }
 function editPhase(id){
-  const p=id?P(id):{nama:'',warna:CFG.phases.length%PC.length};
+  const p=id?P(id):{nama:'',warna:CFG.phases.length%PC.length,w:LANE_W}, idx=id?CFG.phases.indexOf(p):-1;
   dialog(id?'Ubah fasa':'Fasa baru',`
-    <label class="full">Nama fasa<input name="nama" required value="${esc(p.nama)}" maxlength="24"></label>
-    <div class="full lbl">Warna<div class="swatches">${PC.map((c,i)=>`<label><input type="radio" name="warna" value="${i}" ${i===p.warna?'checked':''}><span style="--pc:${c}"></span></label>`).join('')}</div></div>`,
-    v=>{ if(id){p.nama=v.nama.trim();p.warna=+v.warna;} else CFG.phases.push({id:uid('p'),nama:v.nama.trim(),warna:+v.warna}); save(); render(); },
-    {onDelete:id?()=>{const n=CFG.steps.filter(s=>s.phaseId===id).length;if(n){toast(`Alih atau padam ${n} langkah dalam fasa ini dahulu.`);return false;}if(CFG.phases.length<2){toast('Sekurang-kurangnya satu fasa diperlukan.');return false;}CFG.phases=CFG.phases.filter(x=>x.id!==id);save();render();}:null});
-}
-function editStep(id,phaseId){
-  const s=id?S(id):{nama:'',phaseId,jenis:'langkah',userId:'',jabatan:'',sla:5};
-  const hasMx=CFG.steps.some(x=>x.jenis==='matriks'&&x.id!==id);
-  dialog(id?'Ubah langkah':'Langkah baru',`
-    <label class="full">Nama langkah<input name="nama" required value="${esc(s.nama)}" placeholder="cth: Semakan teknikal"></label>
-    <label>Jenis<select name="jenis" id="eJenis">${opt('langkah','Langkah biasa',s.jenis)}${hasMx&&s.jenis!=='matriks'?'':opt('matriks','Kelulusan ikut matriks had',s.jenis)}</select></label>
-    <label>Fasa<select name="phaseId">${CFG.phases.map(p=>opt(p.id,p.nama,s.phaseId)).join('')}</select></label>
-    <label class="eUser">Pengguna (user)<select name="userId" id="eUser" required>${opt('','— Pilih pengguna —',s.userId)}${userOptions(s.userId)}</select></label>
-    <label class="eUser">Jabatan<select name="jabatan" id="eJab">${deptOptions(s.jabatan,'Ikut jabatan pengguna')}</select></label>
-    <label>SLA (hari)<input name="sla" type="number" min="1" step="1" value="${s.sla??''}" placeholder="Kosong = tiada SLA"></label>
-    <div class="preview" id="eMx" hidden>Pelulus diambil daripada <b>Matriks had kelulusan</b> (tab Pengguna & jabatan) mengikut nilai permohonan.</div>`,
+    <label class="full">Nama fasa<input name="nama" id="pNama" required value="${esc(p.nama)}" maxlength="24"></label>
+    <div class="full lbl">Warna<div class="swatches">${PC.map((c,i)=>`<label><input type="radio" name="warna" value="${i}" ${i===p.warna?'checked':''}><span style="--pc:${c}"></span></label>`).join('')}</div></div>
+    <label>Lebar (px)<input name="w" id="pW" type="number" min="180" step="10" value="${p.w||LANE_W}"></label>
+    ${id?`<label>Kedudukan<select name="pos" id="pPos">${CFG.phases.map((_,i)=>opt(String(i),`${i+1}`,String(idx))).join('')}</select></label>`:''}`,
     v=>{
-      if(v.jenis!=='matriks'&&!v.userId){toast('Pilih pengguna.');return false;}
-      const o={nama:v.nama.trim(),jenis:v.jenis,phaseId:v.phaseId,userId:v.jenis==='matriks'?'':v.userId,jabatan:v.jenis==='matriks'?'':v.jabatan,sla:v.sla?+v.sla:null};
-      if(id){const moved=s.phaseId!==o.phaseId;Object.assign(s,o);if(moved){CFG.steps=CFG.steps.filter(x=>x.id!==id);CFG.steps.push(s);}}
-      else CFG.steps.push({id:uid('s'),...o});
+      const w=Math.max(180,+v.w||LANE_W);
+      if(!id){CFG.phases.push({id:uid('p'),nama:v.nama.trim(),warna:+v.warna,w});save();render();return;}
+      const rel=CFG.nodes.map(nd=>{const [nw]=size(nd,'edit');const r=laneAt(nd.x+nw/2);return {nd,pid:r&&r.p.id,off:r?nd.x-r.x:0};});
+      p.nama=v.nama.trim(); p.warna=+v.warna; p.w=w;
+      const to=+v.pos; if(to!==idx){CFG.phases.splice(idx,1);CFG.phases.splice(to,0,p);}
+      const after=laneLayout(); rel.forEach(o=>{const r=after.find(x=>x.p.id===o.pid);if(r)o.nd.x=Math.max(0,r.x+Math.min(o.off,r.w-60));});
       save(); render();
     },
-    {onDelete:id?()=>{const n=activeAt(id);if(n){toast(`${n} permohonan aktif berada di langkah ini — selesaikan atau alih dahulu.`);return false;}ask(`Padam langkah "${s.nama}"?`,()=>{CFG.steps=CFG.steps.filter(x=>x.id!==id);save();render();},'Padam');return false;}:null});
-  const sync=()=>{const m=$('eJenis').value==='matriks';document.querySelectorAll('.eUser').forEach(l=>l.hidden=m);$('eMx').hidden=!m;$('eUser').required=!m;};
-  $('eUser').onchange=()=>{const u=U($('eUser').value);if(u&&!$('eJab').value)$('eJab').value='';};
-  $('eJenis').onchange=sync; sync();
+    {onDelete:id?()=>{const inside=CFG.nodes.filter(nd=>phaseOfNode(nd)===p&&nd.jenis!=='mula').length;if(inside){toast(`Alih atau padam ${inside} kotak dalam fasa ini dahulu.`);return false;}
+      const r=laneLayout().find(x=>x.p.id===id);CFG.nodes.forEach(nd=>{if(nd.x>=r.x+r.w)nd.x-=r.w;});CFG.phases=CFG.phases.filter(x=>x.id!==id);save();render();}:null});
 }
-$('wfAddPhase').onclick=()=>editPhase(null);
+
+/* ----- Eksport / Import ----- */
 $('wfExport').onclick=()=>{
-  const json=JSON.stringify({versi:1,dieksport:iso(TODAY),...CFG},null,2);
+  const json=JSON.stringify({versi:2,dieksport:iso(TODAY),...CFG},null,2);
   dialog('Eksport workflow (JSON)',`<label class="full">Salin teks ini dan simpan sebagai fail .json<textarea id="exTxt" rows="12" readonly style="font:12px/1.4 Consolas,monospace">${esc(json)}</textarea></label>`,
     ()=>{const t=$('exTxt');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}
       if(navigator.clipboard){navigator.clipboard.writeText(json).then(()=>toast('Disalin.'),()=>toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.'));}else toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.');return false;},{saveLabel:'Salin'});
 };
-function applyImport(t){
-  let c; try{c=JSON.parse(t);}catch(e){toast('JSON tidak sah.');return false;}
-  if(!validCfg(c)){toast('JSON tiada fasa/langkah/pengguna/jabatan/matriks.');return false;}
-  CFG={phases:c.phases,steps:c.steps,users:c.users,depts:c.depts,matrix:c.matrix};save();render();toast('Workflow diimport.');
-}
 $('wfImport').onclick=()=>{
   dialog('Import workflow (JSON)',`<label class="full">Pilih fail .json<input type="file" id="imFile" accept="application/json,.json"></label>
     <label class="full">atau tampal teks JSON<textarea name="json" id="imTxt" rows="10" style="font:12px/1.4 Consolas,monospace"></textarea></label>`,
-    v=>applyImport(v.json||''),{saveLabel:'Import'});
+    v=>{let c;try{c=JSON.parse(v.json||'');}catch(e){toast('JSON tidak sah.');return false;}
+      const m=migrate(c); if(!m){toast('JSON tiada fasa/langkah/pengguna/jabatan/matriks.');return false;}
+      CFG={phases:m.phases,nodes:m.nodes,edges:m.edges,users:m.users,depts:m.depts,matrix:m.matrix};VS=null;save();render();toast('Workflow diimport.');},{saveLabel:'Import'});
   $('imFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>{$('imTxt').value=t;});};
 };
-/* Pengesahan dalam halaman (confirm() disekat dalam sesetengah pratonton) */
-function ask(msg,onYes,label='Ya'){dialog('Pengesahan',`<p class="full" style="margin:0;font-size:14px;color:var(--text)">${esc(msg)}</p>`,()=>{onYes();},{saveLabel:label});}
 
 /* =================== PENGGUNA & JABATAN =================== */
 function userRefs(id){
   const r=[];
-  CFG.steps.filter(s=>s.userId===id).forEach(s=>r.push(`langkah "${s.nama}"`));
+  CFG.nodes.filter(n=>n.userId===id).forEach(n=>r.push(`langkah "${n.nama}"`));
   CFG.matrix.forEach((m,i)=>{if(m.userId===id)r.push(`matriks tahap ${i+1}`);});
   CFG.depts.filter(d=>d.ketuaId===id).forEach(d=>r.push(`ketua ${d.nama}`));
   const n=DATA.filter(it=>it.pemohonId===id).length; if(n) r.push(`${n} permohonan`);
@@ -813,7 +1041,7 @@ function userRefs(id){
 }
 function renderSettings(){
   $('uCount').textContent=CFG.users.length+' pengguna';
-  $('uRows').innerHTML=CFG.users.map(u=>`<tr><td><b>${esc(u.nama)}</b></td><td>${esc(u.jawatan)}</td><td>${esc(u.jabatan)}</td><td>${esc(u.emel)||'<span style="color:var(--text-3)">—</span>'}</td><td style="text-align:right"><button class="btn sm" data-u="${u.id}">Ubah</button></td></tr>`).join('');
+  $('uRows').innerHTML=CFG.users.length?CFG.users.map(u=>`<tr><td><b>${esc(u.nama)}</b></td><td>${esc(u.jawatan)}</td><td>${esc(u.jabatan)}</td><td>${esc(u.emel)||'<span style="color:var(--text-3)">—</span>'}</td><td style="text-align:right"><button class="btn sm" data-u="${esc(u.id)}">Ubah</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Belum ada pengguna. Tambah jabatan dahulu, kemudian pengguna.</td></tr>';
   document.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>editUser(b.dataset.u));
   $('dRows').innerHTML=CFG.depts.map((d,i)=>`<tr><td><input value="${esc(d.nama)}" data-dn="${i}" aria-label="Nama jabatan"></td>
     <td><select data-dk="${i}" aria-label="Ketua jabatan">${opt('','—',d.ketuaId)}${userOptions(d.ketuaId,false)}</select></td>
@@ -822,15 +1050,14 @@ function renderSettings(){
   document.querySelectorAll('[data-dn]').forEach(el=>el.onchange=()=>{
     const d=CFG.depts[+el.dataset.dn],old=d.nama,nu=el.value.trim();
     if(!nu||(nu!==old&&D(nu))){toast('Nama jabatan kosong atau sudah wujud.');el.value=old;return;}
-    d.nama=nu; CFG.users.forEach(u=>{if(u.jabatan===old)u.jabatan=nu;}); CFG.steps.forEach(s=>{if(s.jabatan===old)s.jabatan=nu;}); DATA.forEach(it=>{if(it.jabatan===old){it.jabatan=nu;saveReq(it);}});
+    d.nama=nu; CFG.users.forEach(u=>{if(u.jabatan===old)u.jabatan=nu;}); CFG.nodes.forEach(n=>{if(n.jabatan===old)n.jabatan=nu;}); DATA.forEach(it=>{if(it.jabatan===old){it.jabatan=nu;saveReq(it);}});
     save(); renderSettings();
   });
   document.querySelectorAll('[data-dk]').forEach(el=>el.onchange=()=>{CFG.depts[+el.dataset.dk].ketuaId=el.value;save();});
   document.querySelectorAll('[data-db]').forEach(el=>el.onchange=()=>{CFG.depts[+el.dataset.db].bajet=Math.max(0,+el.value||0);save();});
   document.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{
     const d=CFG.depts[+b.dataset.dd];
-    const used=CFG.users.some(u=>u.jabatan===d.nama)||DATA.some(it=>it.jabatan===d.nama)||CFG.steps.some(s=>s.jabatan===d.nama);
-    if(used){toast(`Jabatan ${d.nama} masih digunakan oleh pengguna, langkah atau permohonan.`);return;}
+    if(CFG.users.some(u=>u.jabatan===d.nama)||DATA.some(it=>it.jabatan===d.nama)||CFG.nodes.some(n=>n.jabatan===d.nama)){toast(`Jabatan ${d.nama} masih digunakan oleh pengguna, langkah atau permohonan.`);return;}
     CFG.depts.splice(+b.dataset.dd,1);save();renderSettings();
   });
   $('mRows').innerHTML=CFG.matrix.map((m,i)=>{const last=i===CFG.matrix.length-1;return `<tr>
@@ -840,17 +1067,17 @@ function renderSettings(){
   document.querySelectorAll('[data-mh]').forEach(el=>el.onchange=()=>{CFG.matrix[+el.dataset.mh].had=Math.max(1,+el.value||1);sortMatrix();save();renderSettings();});
   document.querySelectorAll('[data-mu]').forEach(el=>el.onchange=()=>{CFG.matrix[+el.dataset.mu].userId=el.value;save();renderSettings();});
   document.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{CFG.matrix.splice(+b.dataset.md,1);CFG.matrix[CFG.matrix.length-1].had=null;save();renderSettings();});
-  const miss=CFG.matrix.some(m=>!U(m.userId));
-  $('mWarn').textContent=miss?'⚠ Ada tahap tanpa pelulus.':'';
+  $('mWarn').textContent=CFG.matrix.some(m=>!U(m.userId))?'⚠ Ada tahap tanpa pelulus.':'';
 }
 function sortMatrix(){const last=CFG.matrix.pop();CFG.matrix.sort((a,b)=>a.had-b.had);CFG.matrix.push(last);}
 function editUser(id){
+  if(!CFG.depts.length){toast('Tambah jabatan dahulu.');return;}
   const u=id?U(id):{nama:'',jawatan:'',jabatan:'',emel:''};
   dialog(id?'Ubah pengguna':'Pengguna baru',`
-    <label>Nama<input name="nama" required value="${esc(u.nama)}"></label>
-    <label>Jawatan<input name="jawatan" required value="${esc(u.jawatan)}"></label>
-    <label>Jabatan<select name="jabatan" required>${deptOptions(u.jabatan)}</select></label>
-    <label>Emel (untuk notifikasi Power Automate)<input name="emel" type="email" value="${esc(u.emel)}"></label>`,
+    <label>Nama<input name="nama" id="uNama" required value="${esc(u.nama)}"></label>
+    <label>Jawatan<input name="jawatan" id="uJaw" required value="${esc(u.jawatan)}"></label>
+    <label>Jabatan<select name="jabatan" id="uJab" required>${deptOptions(u.jabatan)}</select></label>
+    <label>Emel (untuk notifikasi Power Automate)<input name="emel" id="uEmel" type="email" value="${esc(u.emel)}"></label>`,
     v=>{const o={nama:v.nama.trim(),jawatan:v.jawatan.trim(),jabatan:v.jabatan,emel:v.emel.trim()};if(id)Object.assign(u,o);else CFG.users.push({id:uid('u'),...o});save();renderSettings();},
     {onDelete:id?()=>{const r=userRefs(id);if(r.length){toast('Masih digunakan: '+r.slice(0,3).join(', ')+(r.length>3?'…':''));return false;}CFG.users=CFG.users.filter(x=>x.id!==id);save();renderSettings();}:null});
 }
@@ -859,6 +1086,7 @@ $('dAdd').onclick=()=>{let n='Jabatan baru',k=2;while(D(n))n='Jabatan baru '+k++
 $('mAdd').onclick=()=>{const n=CFG.matrix.length,prev=n>1?CFG.matrix[n-2].had:0;CFG.matrix.splice(n-1,0,{had:(prev||50000)*2,userId:''});save();renderSettings();};
 
 /* ===== INIT ===== */
+addEventListener('resize',()=>{if(VIEW==='dashboard'&&!busy())renderFlow();});
 show(getHash()||'dashboard');
 connectStore();
 </script>

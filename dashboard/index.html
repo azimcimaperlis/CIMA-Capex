@@ -42,8 +42,8 @@ a{color:var(--brand)}
 /* Header + tab (Power Apps: HeaderContainer + navigasi skrin) */
 header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);min-height:56px;flex-wrap:wrap}
 header h1{font-size:16px;font-weight:600;margin:0;white-space:nowrap}
-nav.tabs{display:flex;gap:4px;align-self:stretch}
-.tab{border:0;background:none;padding:0 12px;cursor:pointer;color:var(--text-2);border-bottom:2px solid transparent;min-height:44px}
+nav.tabs{display:flex;gap:4px;align-self:stretch;overflow-x:auto;max-width:100%}
+.tab{border:0;background:none;padding:0 12px;white-space:nowrap;cursor:pointer;color:var(--text-2);border-bottom:2px solid transparent;min-height:44px}
 .tab:hover{color:var(--text)}
 .tab.on{color:var(--text);border-bottom-color:var(--brand);font-weight:600}
 header .sp{flex:1}
@@ -292,7 +292,7 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
     <div class="toolbar">
       <button class="btn" id="wfAddPhase">+ Tambah fasa</button>
       <button class="btn" id="wfExport">Eksport JSON</button>
-      <label class="btn" for="wfImport">Import JSON</label><input type="file" id="wfImport" accept="application/json,.json" hidden>
+      <button class="btn" id="wfImport">Import JSON</button>
       <button class="btn danger" id="wfReset">Set semula ke contoh</button>
     </div>
     <div class="board" id="board"></div>
@@ -342,6 +342,8 @@ table.list{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+/* Papar ralat sebenar (pratonton mungkin hanya tunjuk "Script error.") */
+addEventListener('error',e=>{const t=document.getElementById('toast');if(t&&e.message&&e.message!=='Script error.'){t.textContent='Ralat: '+e.message;t.style.display='block';}});
 /* =====================================================================
    MODEL DATA (dipetakan ke SharePoint List dalam Power Apps):
    CFG.phases  -> CAPEX_Fasa      (Nama, Warna, Susunan)
@@ -517,8 +519,11 @@ function show(v){
   $('btnNew').hidden=VIEW!=='dash';
   render();
 }
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{history.replaceState(null,'','#'+t.dataset.v);show(t.dataset.v);});
-addEventListener('hashchange',()=>show(location.hash.slice(1)));
+/* Pratonton fail / iframe sandbox boleh menyekat history & hash — sentiasa dibalut try/catch */
+const getHash=()=>{try{return location.hash.slice(1);}catch(e){return '';}};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{try{history.replaceState(null,'','#'+t.dataset.v);}catch(e){}show(t.dataset.v);});
+addEventListener('hashchange',()=>show(getHash()));
+document.querySelectorAll('a[href="#set"]').forEach(a=>a.onclick=e=>{e.preventDefault();show('set');});
 function render(){ if(VIEW==='dash') renderDash(); else if(VIEW==='wf') renderBoard(); else renderSettings(); }
 
 /* =================== DASHBOARD =================== */
@@ -701,8 +706,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
 function dialog(title,html,onSubmit,{onDelete,saveLabel='Simpan'}={}){
   $('dlgTitle').textContent=title;
   const f=$('dlgForm');
-  f.innerHTML=html+`<div class="acts">${onDelete?'<button type="button" class="btn danger" id="dlgDel" style="margin-right:auto">Padam</button>':''}<button type="button" class="btn" id="dlgCancel">Batal</button><button class="btn primary">${saveLabel}</button></div>`;
-  f.onsubmit=e=>{e.preventDefault();if(onSubmit(Object.fromEntries(new FormData(f)))!==false){closeAll();}};
+  f.innerHTML=html+`<div class="acts">${onDelete?'<button type="button" class="btn danger" id="dlgDel" style="margin-right:auto">Padam</button>':''}<button type="button" class="btn" id="dlgCancel">Batal</button><button type="button" class="btn primary" id="dlgOk">${saveLabel}</button></div>`;
+  /* Tiada form submit: pratonton sandbox tanpa allow-forms menyekat submit */
+  const go=()=>{if(!f.reportValidity())return;if(onSubmit(Object.fromEntries(new FormData(f)))!==false)closeAll();};
+  f.onsubmit=e=>{e.preventDefault();go();};
+  $('dlgOk').onclick=go;
+  f.querySelectorAll('input').forEach(i=>i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();go();}});
   $('dlgCancel').onclick=closeAll; if(onDelete) $('dlgDel').onclick=()=>{if(onDelete()!==false)closeAll();};
   $('scrim').classList.add('show');$('dlg').classList.add('show');
   const first=f.querySelector('input,select,textarea'); if(first) first.focus();
@@ -820,22 +829,34 @@ function editStep(id,phaseId){
       else CFG.steps.push({id:uid('s'),...o});
       save(); render();
     },
-    {onDelete:id?()=>{const n=activeAt(id);if(n){toast(`${n} permohonan aktif berada di langkah ini — selesaikan atau alih dahulu.`);return false;}if(!confirm(`Padam langkah "${s.nama}"?`))return false;CFG.steps=CFG.steps.filter(x=>x.id!==id);save();render();}:null});
+    {onDelete:id?()=>{const n=activeAt(id);if(n){toast(`${n} permohonan aktif berada di langkah ini — selesaikan atau alih dahulu.`);return false;}ask(`Padam langkah "${s.nama}"?`,()=>{CFG.steps=CFG.steps.filter(x=>x.id!==id);save();render();},'Padam');return false;}:null});
   const sync=()=>{const m=$('eJenis').value==='matriks';document.querySelectorAll('.eUser').forEach(l=>l.hidden=m);$('eMx').hidden=!m;$('eUser').required=!m;};
   $('eUser').onchange=()=>{const u=U($('eUser').value);if(u&&!$('eJab').value)$('eJab').value='';};
   $('eJenis').onchange=sync; sync();
 }
 $('wfAddPhase').onclick=()=>editPhase(null);
 $('wfExport').onclick=()=>{
-  const blob=new Blob([JSON.stringify({versi:1,dieksport:iso(TODAY),...CFG},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`capex-workflow-${iso(TODAY)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const json=JSON.stringify({versi:1,dieksport:iso(TODAY),...CFG},null,2);
+  dialog('Eksport workflow (JSON)',`<label class="full">Salin teks ini atau muat turun sebagai fail .json<textarea id="exTxt" rows="12" readonly style="font:12px/1.4 Consolas,monospace">${esc(json)}</textarea></label>
+    <div class="full"><button type="button" class="btn" id="exDl">Muat turun fail</button></div>`,
+    ()=>{const t=$('exTxt');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}
+      if(navigator.clipboard){navigator.clipboard.writeText(json).then(()=>toast('Disalin.'),()=>toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.'));}else toast(ok?'Disalin.':'Tekan lama pada teks untuk salin.');return false;},{saveLabel:'Salin'});
+  $('exDl').onclick=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download=`capex-workflow-${iso(TODAY)}.json`;document.body.appendChild(a);a.click();a.remove();}catch(e){toast('Muat turun disekat di sini — guna Salin.');}};
 };
-$('wfImport').onchange=e=>{
-  const f=e.target.files[0]; if(!f) return;
-  f.text().then(t=>{const c=JSON.parse(t);if(!validCfg(c))throw 0;CFG={phases:c.phases,steps:c.steps,users:c.users,depts:c.depts,matrix:c.matrix};save();render();toast('Workflow diimport.');})
-   .catch(()=>toast('Fail JSON tidak sah.')).finally(()=>e.target.value='');
+function applyImport(t){
+  let c; try{c=JSON.parse(t);}catch(e){toast('JSON tidak sah.');return false;}
+  if(!validCfg(c)){toast('JSON tiada fasa/langkah/pengguna/jabatan/matriks.');return false;}
+  CFG={phases:c.phases,steps:c.steps,users:c.users,depts:c.depts,matrix:c.matrix};save();render();toast('Workflow diimport.');
+}
+$('wfImport').onclick=()=>{
+  dialog('Import workflow (JSON)',`<label class="full">Pilih fail .json<input type="file" id="imFile" accept="application/json,.json"></label>
+    <label class="full">atau tampal teks JSON<textarea name="json" id="imTxt" rows="10" style="font:12px/1.4 Consolas,monospace"></textarea></label>`,
+    v=>applyImport(v.json||''),{saveLabel:'Import'});
+  $('imFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>{$('imTxt').value=t;});};
 };
-$('wfReset').onclick=()=>{if(!confirm('Set semula workflow, pengguna, jabatan dan data permohonan ke contoh asal?'))return;CFG=defaultCfg();DATA=seedData();save();render();toast('Dikembalikan ke contoh asal.');};
+$('wfReset').onclick=()=>ask('Set semula workflow, pengguna, jabatan dan data permohonan ke contoh asal?',()=>{CFG=defaultCfg();DATA=seedData();save();render();toast('Dikembalikan ke contoh asal.');},'Set semula');
+/* Pengesahan dalam halaman (confirm() disekat dalam sesetengah pratonton) */
+function ask(msg,onYes,label='Ya'){dialog('Pengesahan',`<p class="full" style="margin:0;font-size:14px;color:var(--text)">${esc(msg)}</p>`,()=>{onYes();},{saveLabel:label});}
 
 /* =================== PENGGUNA & JABATAN =================== */
 function userRefs(id){
@@ -895,8 +916,7 @@ $('mAdd').onclick=()=>{const n=CFG.matrix.length,prev=n>1?CFG.matrix[n-2].had:0;
 
 /* ===== INIT ===== */
 load();
-if(location.hash==='#set-matrix'){location.hash='#set';}
-show(location.hash.slice(1)||'dash');
+show(getHash()||'dash');
 </script>
 </body>
 </html>
